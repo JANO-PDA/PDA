@@ -75,6 +75,9 @@ class TodoViewModel : ViewModel() {
     // For task persistence
     private lateinit var taskStorage: TaskStorage
     
+    // Track tasks that are about to become overdue for precise failure messages
+    private val tasksChecked = mutableMapOf<String, Boolean>()
+    
     // Initialize with application context
     fun initialize(context: Context) {
         try {
@@ -348,12 +351,18 @@ class TodoViewModel : ViewModel() {
     }
 
     fun deleteTask(task: Task) {
+        Log.d("TodoViewModel", "Deleting task: ${task.id} - ${task.title}")
+        
         // If the task was completed, remove XP
         if (task.isCompleted && !task.isSubtask()) {
             removeXpForTask(task)
-            
-            // Generate NPC message for task deletion (treating as failure)
+        }
+        
+        // Generate NPC message for task deletion
+        if (!task.isSubtask()) {
+            // Generate failure message for any task deletion - whether completed or not
             npcRepository.generateFailureMessage(task.category)
+            Log.d("TodoViewModel", "Generated failure message for deleted task: ${task.id} - ${task.title}")
         }
         
         // Delete task and its subtasks
@@ -603,33 +612,67 @@ class TodoViewModel : ViewModel() {
         }
     }
 
-    // Check for overdue tasks and generate failure messages
+    // Check for overdue tasks and generate failure messages at the exact time
     private fun checkOverdueTasks() {
-        val overdueTasks = _tasks.value.filter { 
-            !it.isCompleted && it.isOverdue() && !it.isSubtask()
+        val now = System.currentTimeMillis()
+        val allTasks = _tasks.value
+        
+        // Find tasks that are exactly becoming overdue in this check
+        allTasks.forEach { task ->
+            if (!task.isCompleted && !task.isSubtask() && task.dueDate != null) {
+                val taskId = task.id
+                
+                // Get the due time in milliseconds
+                val dueDateTime = task.getDueDateTime()
+                val dueTimeMillis = dueDateTime?.atZone(ZoneId.systemDefault())?.toInstant()?.toEpochMilli() ?: 0
+                
+                // If the task is becoming overdue right now (within 1 second precision)
+                val isOverdue = task.isOverdue()
+                val wasCheckedBefore = tasksChecked[taskId] ?: false
+                
+                // If we just detected task becoming overdue (was not overdue before, is overdue now)
+                if (isOverdue && !wasCheckedBefore) {
+                    // Generate NPC message for task failure at the exact time
+                    npcRepository.generateFailureMessage(task.category)
+                    
+                    // Log for debugging
+                    Log.d("TodoViewModel", "Task became overdue exactly now: ${task.id} - ${task.title}")
+                    Log.d("TodoViewModel", "Due time: ${dueDateTime}, Current time: ${java.time.LocalDateTime.now()}")
+                    Log.d("TodoViewModel", "Generated failure message for overdue task")
+                }
+                
+                // Update the checked status for this task
+                tasksChecked[taskId] = isOverdue
+            }
         }
         
-        // Generate failure messages for overdue tasks
-        overdueTasks.forEach { task ->
-            // Generate NPC message for task failure
-            npcRepository.generateFailureMessage(task.category)
-            
-            // Log for debugging
-            Log.d("TodoViewModel", "Generated failure message for overdue task: ${task.id} - ${task.title}")
+        // Clean up tasks that no longer exist or are completed
+        val validTaskIds = allTasks.filter { !it.isCompleted }.map { it.id }.toSet()
+        tasksChecked.keys.toList().forEach { taskId ->
+            if (taskId !in validTaskIds) {
+                tasksChecked.remove(taskId)
+            }
         }
     }
     
-    // Function to check for overdue tasks - can be called periodically or on app start
+    // Function to check for overdue tasks - exposed for external calls
     fun checkForOverdueTasks() {
         checkOverdueTasks()
     }
 
+    // Function to generate a debug failure message
+    fun generateDebugFailureMessage() {
+        // Use a default category for testing
+        val testCategory = TaskCategory.WORK
+        npcRepository.generateFailureMessage(testCategory)
+        
+        // Log for debugging
+        Log.d("TodoViewModel", "Generated debug failure message for category: ${testCategory.name}")
+    }
+
     init {
-        // Load tasks from storage
+        // Check for overdue tasks on initialization
         viewModelScope.launch {
-            loadTasks()
-            
-            // Check for overdue tasks on initialization
             checkOverdueTasks()
         }
     }

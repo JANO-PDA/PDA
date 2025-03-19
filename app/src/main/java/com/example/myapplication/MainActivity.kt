@@ -1,6 +1,8 @@
 package com.example.myapplication
 
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -15,6 +17,17 @@ import com.example.myapplication.ui.viewmodel.TodoViewModel
 class MainActivity : ComponentActivity() {
     private val viewModel: TodoViewModel by viewModels()
     private val TAG = "MainActivity"
+    
+    // Handler for periodic checks
+    private val handler = Handler(Looper.getMainLooper())
+    private val checkOverdueRunnable = object : Runnable {
+        override fun run() {
+            viewModel.checkForOverdueTasks()
+            Log.d("MainActivity", "Periodic overdue task check executed")
+            // Schedule the next check in 1 second (instead of 1 minute)
+            handler.postDelayed(this, 1000)
+        }
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -47,6 +60,16 @@ class MainActivity : ComponentActivity() {
         
         // Check for overdue tasks when app resumes
         viewModel.checkForOverdueTasks()
+        
+        // Start periodic checks
+        handler.post(checkOverdueRunnable)
+    }
+    
+    override fun onPause() {
+        super.onPause()
+        
+        // Stop periodic checks when app is paused
+        handler.removeCallbacks(checkOverdueRunnable)
     }
     
     private fun handleIntent(intent: android.content.Intent) {
