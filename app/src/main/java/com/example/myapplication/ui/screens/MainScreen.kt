@@ -365,86 +365,75 @@ fun MainScreen(viewModel: TodoViewModel) {
                 }
             },
             text = {
-                try {
-                    // Access messages safely without casting
-                    val messagesList = npcMessages.toList()
-                    if (messagesList.isEmpty()) {
-                        Text(
-                            text = "No messages yet",
-                            style = MaterialTheme.typography.bodyLarge,
-                            textAlign = TextAlign.Center,
-                            modifier = Modifier.fillMaxWidth()
-                        )
-                    } else {
-                        // Use sortedByDescending with direct access to timestamp
-                        val sortedMessages = messagesList.sortedByDescending { it.timestamp.time }
-                        
-                        LazyColumn(
-                            modifier = Modifier.heightIn(max = 400.dp)
-                        ) {
-                            items(sortedMessages) { msg ->
-                                Card(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(vertical = 4.dp)
-                                        .clickable { 
-                                            viewModel.markMessageAsRead(msg.id)
-                                        },
-                                    colors = CardDefaults.cardColors(
-                                        containerColor = if (msg.isRead) 
-                                            MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.7f)
-                                        else 
-                                            MaterialTheme.colorScheme.primaryContainer
-                                    )
+                // Access messages safely with null-safe operations
+                val messagesList = npcMessages ?: emptyList()
+                if (messagesList.isEmpty()) {
+                    Text(
+                        text = "No messages yet",
+                        style = MaterialTheme.typography.bodyLarge,
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                } else {
+                    // Use sortedByDescending with direct access to timestamp
+                    val sortedMessages = messagesList.sortedByDescending { it.timestamp.time }
+                    
+                    LazyColumn(
+                        modifier = Modifier.heightIn(max = 400.dp)
+                    ) {
+                        items(sortedMessages) { msg ->
+                            Card(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(vertical = 4.dp)
+                                    .clickable { 
+                                        viewModel.markMessageAsRead(msg.id)
+                                    },
+                                colors = CardDefaults.cardColors(
+                                    containerColor = if (msg.isRead) 
+                                        MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.7f)
+                                    else 
+                                        MaterialTheme.colorScheme.primaryContainer
+                                )
+                            ) {
+                                Column(
+                                    modifier = Modifier.padding(8.dp)
                                 ) {
-                                    Column(
-                                        modifier = Modifier.padding(8.dp)
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.SpaceBetween
                                     ) {
-                                        Row(
-                                            modifier = Modifier.fillMaxWidth(),
-                                            horizontalArrangement = Arrangement.SpaceBetween
-                                        ) {
-                                            Text(
-                                                text = msg.npcName,
-                                                style = MaterialTheme.typography.titleSmall,
-                                                fontWeight = FontWeight.Bold
-                                            )
-                                            Text(
-                                                text = formatTimestamp(msg.timestamp.time),
-                                                style = MaterialTheme.typography.bodySmall
-                                            )
-                                        }
-                                        
-                                        Spacer(modifier = Modifier.height(4.dp))
-                                        
                                         Text(
-                                            text = msg.message,
-                                            style = MaterialTheme.typography.bodyMedium
+                                            text = msg.npcName,
+                                            style = MaterialTheme.typography.titleSmall,
+                                            fontWeight = FontWeight.Bold
                                         )
-                                        
-                                        if (!msg.isRead) {
-                                            Spacer(modifier = Modifier.height(4.dp))
-                                            Text(
-                                                text = "NEW",
-                                                style = MaterialTheme.typography.labelSmall,
-                                                color = MaterialTheme.colorScheme.primary,
-                                                modifier = Modifier.align(Alignment.End)
-                                            )
-                                        }
+                                        Text(
+                                            text = formatTimestamp(msg.timestamp.time),
+                                            style = MaterialTheme.typography.bodySmall
+                                        )
+                                    }
+                                    
+                                    Spacer(modifier = Modifier.height(4.dp))
+                                    
+                                    Text(
+                                        text = msg.message,
+                                        style = MaterialTheme.typography.bodyMedium
+                                    )
+                                    
+                                    if (!msg.isRead) {
+                                        Spacer(modifier = Modifier.height(4.dp))
+                                        Text(
+                                            text = "NEW",
+                                            style = MaterialTheme.typography.labelSmall,
+                                            color = MaterialTheme.colorScheme.primary,
+                                            modifier = Modifier.align(Alignment.End)
+                                        )
                                     }
                                 }
                             }
                         }
                     }
-                } catch (e: Exception) {
-                    // Show error message if something goes wrong
-                    Text(
-                        text = "Error loading messages. Please try again.",
-                        style = MaterialTheme.typography.bodyLarge,
-                        textAlign = TextAlign.Center,
-                        color = MaterialTheme.colorScheme.error,
-                        modifier = Modifier.fillMaxWidth()
-                    )
                 }
             },
             confirmButton = {
