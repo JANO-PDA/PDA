@@ -671,16 +671,6 @@ class TodoViewModel : ViewModel() {
         checkOverdueTasks()
     }
 
-    // Function to generate a debug failure message
-    fun generateDebugFailureMessage() {
-        // Use a default category for testing
-        val testCategory = TaskCategory.WORK
-        npcRepository.generateFailureMessage(testCategory)
-        
-        // Log for debugging
-        Log.d("TodoViewModel", "Generated debug failure message for category: ${testCategory.name}")
-    }
-
     fun updateUserProfile(updatedProfile: UserProfile) {
         _userProfile.value = updatedProfile
     }

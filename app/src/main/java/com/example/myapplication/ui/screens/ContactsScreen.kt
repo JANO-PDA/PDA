@@ -86,18 +86,6 @@ fun ContactsScreen(
                             contentDescription = "Mark all as read"
                         )
                     }
-                    
-                    // Debug button to generate failure message
-                    IconButton(
-                        onClick = {
-                            viewModel.generateDebugFailureMessage()
-                        }
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.BugReport,
-                            contentDescription = "Generate Debug Failure Message"
-                        )
-                    }
                 }
             )
         },
