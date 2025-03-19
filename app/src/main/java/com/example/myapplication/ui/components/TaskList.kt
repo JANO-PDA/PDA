@@ -40,201 +40,55 @@ fun TaskList(
     viewModel: TodoViewModel? = null,
     modifier: Modifier = Modifier
 ) {
-    var showAddTaskDialog by remember { mutableStateOf(false) }
-    var showCompletedTasks by remember { mutableStateOf(false) }
-    var showCategoryProgress by remember { mutableStateOf(false) }
-    var showContacts by remember { mutableStateOf(false) }
     var selectedParentTask by remember { mutableStateOf<Task?>(null) }
     
-    // Drawer state
-    val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
-    val scope = rememberCoroutineScope()
-    
-    when {
-        showCompletedTasks && viewModel != null -> {
-            CompletedTasksScreen(
-                viewModel = viewModel,
-                onNavigateBack = { showCompletedTasks = false }
+    LazyColumn(
+        modifier = modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        // Task items
+        items(tasks) { task ->
+            val taskSubtasks = subtaskMap[task.id] ?: emptyList()
+            val highlightedTaskId = viewModel?.highlightedTaskId?.collectAsState()?.value
+            val isHighlighted = task.id == highlightedTaskId
+            
+            TaskItem(
+                task = task,
+                onComplete = { onTaskComplete(task) },
+                onDelete = { viewModel?.deleteTask(task) },
+                subtasks = taskSubtasks.filter { !it.isCompleted },
+                onAddSubtask = { selectedParentTask = it },
+                onCompleteSubtask = { subtask -> 
+                    viewModel?.completeTask(subtask)
+                },
+                isHighlighted = isHighlighted
             )
         }
-        showCategoryProgress && viewModel != null -> {
-            CategoryProgressScreen(
-                viewModel = viewModel,
-                onNavigateBack = { showCategoryProgress = false }
-            )
-        }
-        showContacts && viewModel != null -> {
-            ContactsScreen(
-                viewModel = viewModel,
-                onNavigateBack = { showContacts = false }
-            )
-        }
-        else -> {
-            ModalNavigationDrawer(
-                drawerState = drawerState,
-                drawerContent = {
-                    ModalDrawerSheet {
-                        Spacer(modifier = Modifier.height(32.dp))
-                        
-                        // Navigation Items
-                        NavigationDrawerItem(
-                            icon = { Icon(Icons.Default.Check, contentDescription = "Completed Tasks") },
-                            label = { Text("Completed Tasks") },
-                            selected = false,
-                            onClick = { 
-                                scope.launch { 
-                                    drawerState.close()
-                                    showCompletedTasks = true
-                                }
-                            },
-                            badge = {
-                                val completedCount = tasks.count { it.isCompleted }
-                                if (completedCount > 0) {
-                                    Badge { Text(completedCount.toString()) }
-                                }
-                            },
-                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)
-                        )
-                        
-                        NavigationDrawerItem(
-                            icon = { Icon(Icons.AutoMirrored.Filled.List, contentDescription = "Category Progress") },
-                            label = { Text("Category Progress") },
-                            selected = false,
-                            onClick = { 
-                                scope.launch { 
-                                    drawerState.close()
-                                    showCategoryProgress = true 
-                                } 
-                            },
-                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)
-                        )
-                    }
-                }
-            ) {
-                Scaffold(
-                    topBar = {
-                        TopAppBar(
-                            title = { Text("Tasks", Modifier.fillMaxWidth(), textAlign = TextAlign.Center) },
-                            navigationIcon = {
-                                IconButton(onClick = { scope.launch { drawerState.open() } }) {
-                                    Icon(
-                                        imageVector = Icons.Default.Menu,
-                                        contentDescription = "Open menu"
-                                    )
-                                }
-                            },
-                            actions = {
-                                IconButton(onClick = { showContacts = true }) {
-                                    Icon(
-                                        imageVector = Icons.Default.Forum,
-                                        contentDescription = "Contacts"
-                                    )
-                                }
-                            }
-                        )
-                    },
-                    floatingActionButton = {
-                        FloatingActionButton(onClick = { showAddTaskDialog = true }) {
-                            Icon(Icons.Default.Add, contentDescription = "Add Task")
-                        }
-                    }
-                ) { padding ->
-                    Box(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(padding)
-                            .pointerInput(Unit) {
-                                detectHorizontalDragGestures { _, dragAmount ->
-                                    if (dragAmount > 10) {
-                                        scope.launch { drawerState.open() }
-                                    }
-                                }
-                            }
-                    ) {
-                        LazyColumn(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(16.dp),
-                            verticalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            // Tasks header
-                            item {
-                                Text(
-                                    text = "Active Tasks",
-                                    style = MaterialTheme.typography.titleLarge,
-                                    fontWeight = FontWeight.Bold,
-                                    modifier = Modifier.padding(vertical = 8.dp)
-                                )
-                            }
-                            
-                            // Task items
-                            items(tasks) { task ->
-                                val taskSubtasks = subtaskMap[task.id] ?: emptyList()
-                                val highlightedTaskId = viewModel?.highlightedTaskId?.collectAsState()?.value
-                                val isHighlighted = task.id == highlightedTaskId
-                                
-                                TaskItem(
-                                    task = task,
-                                    onComplete = { onTaskComplete(task) },
-                                    onDelete = { /* Handle delete */ },
-                                    subtasks = taskSubtasks.filter { !it.isCompleted },
-                                    onAddSubtask = { selectedParentTask = it },
-                                    onCompleteSubtask = { subtask -> 
-                                        viewModel?.completeTask(subtask)
-                                    },
-                                    isHighlighted = isHighlighted
-                                )
-                            }
-                            
-                            // Empty state
-                            item {
-                                if (tasks.isEmpty()) {
-                                    Column(
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .padding(vertical = 32.dp),
-                                        horizontalAlignment = Alignment.CenterHorizontally
-                                    ) {
-                                        Text(
-                                            text = "No active tasks",
-                                            style = MaterialTheme.typography.titleLarge
-                                        )
-                                        
-                                        Spacer(modifier = Modifier.height(8.dp))
-                                        
-                                        Text(
-                                            text = "Tap the + button to add a new task",
-                                            style = MaterialTheme.typography.bodyLarge,
-                                            textAlign = TextAlign.Center
-                                        )
-                                    }
-                                }
-                            }
-                        }
-                    }
+        
+        // Empty state
+        item {
+            if (tasks.isEmpty()) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 32.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text(
+                        text = "No active tasks",
+                        style = MaterialTheme.typography.titleLarge
+                    )
+                    
+                    Spacer(modifier = Modifier.height(8.dp))
+                    
+                    Text(
+                        text = "Tap the + button to add a new task",
+                        style = MaterialTheme.typography.bodyLarge,
+                        textAlign = TextAlign.Center
+                    )
                 }
             }
         }
-    }
-    
-    // Add Task Dialog
-    if (showAddTaskDialog) {
-        AddTaskDialog(
-            onDismiss = { showAddTaskDialog = false },
-            onAddTask = { title, description, difficulty, category, dueDate, dueTime, hasReminder ->
-                // Call viewModel's addTask method if viewModel is not null
-                viewModel?.addTask(
-                    title = title,
-                    description = description,
-                    difficulty = difficulty,
-                    category = category,
-                    dueDate = dueDate,
-                    dueTime = dueTime,
-                    hasReminder = hasReminder
-                )
-                showAddTaskDialog = false
-            }
-        )
     }
     
     // Add Subtask Dialog

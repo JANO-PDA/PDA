@@ -11,7 +11,7 @@ import androidx.compose.material.icons.automirrored.filled.Message
 import androidx.compose.material3.*
 import androidx.compose.material3.DrawerValue
 import androidx.compose.material3.rememberDrawerState
-import androidx.compose.material3.NavigationDrawer
+import androidx.compose.material3.ModalNavigationDrawer
 import androidx.compose.material3.ModalDrawerSheet
 import androidx.compose.material3.NavigationDrawerItem
 import androidx.compose.runtime.*
@@ -110,7 +110,7 @@ fun MainScreen(viewModel: TodoViewModel) {
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(horizontal = 16.dp, vertical = 8.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally
+                    horizontalAlignment = Alignment.Start
                 ) {
                     Icon(
                         imageVector = Icons.Default.Menu,
@@ -122,15 +122,9 @@ fun MainScreen(viewModel: TodoViewModel) {
                     Spacer(modifier = Modifier.height(8.dp))
                     
                     Text(
-                        text = "Metro PDA Menu",
+                        text = "PDA Menu",
                         style = MaterialTheme.typography.headlineSmall,
                         fontWeight = FontWeight.Bold
-                    )
-                    
-                    Text(
-                        text = "Select an option to continue",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
                     )
                 }
                 
@@ -165,46 +159,6 @@ fun MainScreen(viewModel: TodoViewModel) {
                             drawerState.close()
                             showCategoryProgress = true
                         }
-                    },
-                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)
-                )
-                
-                NavigationDrawerItem(
-                    icon = { Icon(Icons.Default.Forum, contentDescription = "NPC Messages") },
-                    label = { Text("NPC Messages") },
-                    badge = {
-                        val unreadCount = viewModel.getUnreadMessageCount()
-                        if (unreadCount > 0) {
-                            Badge { Text(unreadCount.toString()) }
-                        }
-                    },
-                    selected = false,
-                    onClick = { 
-                        scope.launch {
-                            drawerState.close()
-                            showContactsScreen = true
-                        }
-                    },
-                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)
-                )
-                
-                Divider(modifier = Modifier.padding(vertical = 8.dp))
-                
-                // Maintenance options
-                Text(
-                    text = "Maintenance",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
-                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
-                )
-                
-                NavigationDrawerItem(
-                    icon = { Icon(Icons.Default.Delete, contentDescription = "Clear Completed Tasks", tint = MaterialTheme.colorScheme.error) },
-                    label = { Text("Clear Completed Tasks", color = MaterialTheme.colorScheme.error) },
-                    selected = false,
-                    onClick = { 
-                        viewModel.deleteAllCompletedTasks()
-                        scope.launch { drawerState.close() }
                     },
                     modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)
                 )
