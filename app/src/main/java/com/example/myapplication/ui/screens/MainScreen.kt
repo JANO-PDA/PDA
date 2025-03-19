@@ -44,7 +44,7 @@ fun MainScreen(viewModel: TodoViewModel) {
     var showCompletedTasks by rememberSaveable { mutableStateOf(false) }
     var showCategoryProgress by rememberSaveable { mutableStateOf(false) }
     var showMenuDrawer by rememberSaveable { mutableStateOf(false) }
-    var showMessagesDialog by rememberSaveable { mutableStateOf(false) }
+    var showContactsScreen by rememberSaveable { mutableStateOf(false) }
     
     // Get state
     val showConfetti by viewModel.showConfetti.collectAsState()
@@ -57,6 +57,31 @@ fun MainScreen(viewModel: TodoViewModel) {
     // Update dialog state
     LaunchedEffect(addSubtaskFor) {
         showAddSubtaskDialog = addSubtaskFor != null
+    }
+    
+    // Handle screen navigation
+    if (showContactsScreen) {
+        ContactsScreen(
+            viewModel = viewModel,
+            onNavigateBack = { showContactsScreen = false }
+        )
+        return
+    }
+    
+    if (showCompletedTasks) {
+        CompletedTasksScreen(
+            viewModel = viewModel,
+            onNavigateBack = { showCompletedTasks = false }
+        )
+        return
+    }
+    
+    if (showCategoryProgress) {
+        CategoryProgressScreen(
+            viewModel = viewModel,
+            onNavigateBack = { showCategoryProgress = false }
+        )
+        return
     }
     
     // Prepare task data
@@ -82,7 +107,7 @@ fun MainScreen(viewModel: TodoViewModel) {
                 },
                 actions = {
                     // Message icon with badge
-                    IconButton(onClick = { showMessagesDialog = true }) {
+                    IconButton(onClick = { showContactsScreen = true }) {
                         BadgedBox(
                             badge = {
                                 if (viewModel.getUnreadMessageCount() > 0) {
@@ -330,6 +355,18 @@ fun MainScreen(viewModel: TodoViewModel) {
                     
                     Button(
                         onClick = { 
+                            showContactsScreen = true
+                            showMenuDrawer = false 
+                        },
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text("NPC Messages")
+                    }
+                    
+                    Spacer(modifier = Modifier.height(8.dp))
+                    
+                    Button(
+                        onClick = { 
                             viewModel.deleteAllCompletedTasks()
                             showMenuDrawer = false 
                         },
@@ -341,113 +378,6 @@ fun MainScreen(viewModel: TodoViewModel) {
             },
             confirmButton = {
                 TextButton(onClick = { showMenuDrawer = false }) {
-                    Text("Close")
-                }
-            }
-        )
-    }
-    
-    // NPC Messages Dialog
-    if (showMessagesDialog) {
-        AlertDialog(
-            onDismissRequest = { showMessagesDialog = false },
-            title = { 
-                Row(
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Icon(
-                        imageVector = Icons.AutoMirrored.Filled.Message,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.primary
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text("NPC Messages")
-                }
-            },
-            text = {
-                // Access messages safely with null-safe operations
-                val messagesList = npcMessages ?: emptyList()
-                if (messagesList.isEmpty()) {
-                    Text(
-                        text = "No messages yet",
-                        style = MaterialTheme.typography.bodyLarge,
-                        textAlign = TextAlign.Center,
-                        modifier = Modifier.fillMaxWidth()
-                    )
-                } else {
-                    // Use sortedByDescending with direct access to timestamp
-                    val sortedMessages = messagesList.sortedByDescending { it.timestamp.time }
-                    
-                    LazyColumn(
-                        modifier = Modifier.heightIn(max = 400.dp)
-                    ) {
-                        items(sortedMessages) { msg ->
-                            Card(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(vertical = 4.dp)
-                                    .clickable { 
-                                        viewModel.markMessageAsRead(msg.id)
-                                    },
-                                colors = CardDefaults.cardColors(
-                                    containerColor = if (msg.isRead) 
-                                        MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.7f)
-                                    else 
-                                        MaterialTheme.colorScheme.primaryContainer
-                                )
-                            ) {
-                                Column(
-                                    modifier = Modifier.padding(8.dp)
-                                ) {
-                                    Row(
-                                        modifier = Modifier.fillMaxWidth(),
-                                        horizontalArrangement = Arrangement.SpaceBetween
-                                    ) {
-                                        Text(
-                                            text = msg.npcName,
-                                            style = MaterialTheme.typography.titleSmall,
-                                            fontWeight = FontWeight.Bold
-                                        )
-                                        Text(
-                                            text = formatTimestamp(msg.timestamp.time),
-                                            style = MaterialTheme.typography.bodySmall
-                                        )
-                                    }
-                                    
-                                    Spacer(modifier = Modifier.height(4.dp))
-                                    
-                                    Text(
-                                        text = msg.message,
-                                        style = MaterialTheme.typography.bodyMedium
-                                    )
-                                    
-                                    if (!msg.isRead) {
-                                        Spacer(modifier = Modifier.height(4.dp))
-                                        Text(
-                                            text = "NEW",
-                                            style = MaterialTheme.typography.labelSmall,
-                                            color = MaterialTheme.colorScheme.primary,
-                                            modifier = Modifier.align(Alignment.End)
-                                        )
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            },
-            confirmButton = {
-                TextButton(
-                    onClick = { 
-                        viewModel.markAllMessagesAsRead()
-                        showMessagesDialog = false
-                    }
-                ) {
-                    Text("Mark All Read")
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { showMessagesDialog = false }) {
                     Text("Close")
                 }
             }
@@ -477,66 +407,6 @@ fun MainScreen(viewModel: TodoViewModel) {
                     difficulty = subtaskDifficultyValue
                 )
                 viewModel.dismissAddSubtaskDialog()
-            }
-        )
-    }
-    
-    // Category Progress Dialog
-    if (showCategoryProgress) {
-        AlertDialog(
-            onDismissRequest = { showCategoryProgress = false },
-            title = { 
-                Row(
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Analytics,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.primary
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text("Category Progress")
-                }
-            },
-            text = {
-                LazyColumn {
-                    items(categoryStats.toList()) { (category, stats) ->
-                        Card(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(vertical = 4.dp)
-                        ) {
-                            Column(
-                                modifier = Modifier.padding(8.dp)
-                            ) {
-                                Text(
-                                    text = category.name,
-                                    style = MaterialTheme.typography.titleMedium,
-                                    fontWeight = FontWeight.Bold
-                                )
-                                
-                                Spacer(modifier = Modifier.height(4.dp))
-                                
-                                LinearProgressIndicator(
-                                    progress = { stats.completionRate },
-                                    modifier = Modifier.fillMaxWidth()
-                                )
-                                
-                                Spacer(modifier = Modifier.height(4.dp))
-                                
-                                Text(
-                                    text = "${stats.completedTasks}/${stats.totalTasks} tasks completed (${(stats.completionRate * 100).toInt()}%)",
-                                    style = MaterialTheme.typography.bodySmall
-                                )
-                            }
-                        }
-                    }
-                }
-            },
-            confirmButton = {
-                TextButton(onClick = { showCategoryProgress = false }) {
-                    Text("Close")
-                }
             }
         )
     }
