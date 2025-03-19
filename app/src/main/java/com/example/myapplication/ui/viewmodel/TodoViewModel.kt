@@ -358,11 +358,14 @@ class TodoViewModel : ViewModel() {
             removeXpForTask(task)
         }
         
-        // Generate NPC message for task deletion
-        if (!task.isSubtask()) {
-            // Generate failure message for any task deletion - whether completed or not
+        // Generate NPC message for task deletion ONLY if the task is not overdue
+        // This prevents duplicate messages for overdue tasks that are then deleted
+        if (!task.isSubtask() && !task.isOverdue()) {
+            // Generate failure message only if task wasn't already overdue
             npcRepository.generateFailureMessage(task.category)
             Log.d("TodoViewModel", "Generated failure message for deleted task: ${task.id} - ${task.title}")
+        } else {
+            Log.d("TodoViewModel", "Skipped generating failure message for deleted task: ${task.id} - Task was already overdue")
         }
         
         // Delete task and its subtasks
