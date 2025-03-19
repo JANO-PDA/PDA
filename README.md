@@ -1,6 +1,6 @@
 # MCP - Metro Task Management 🌇
 
-A personal digital assistant (PDA) application designed to help survivors in the post-apocalyptic metro manage their tasks and daily activities. This app combines practical task management with immersive RPG elements. 🎮
+A personal digital assistant (PDA) designed for the post-apocalyptic metro, helping survivors manage their tasks and daily activities while embracing the wasteland's challenges. This app combines practical task management with immersive RPG elements. 🎮
 
 ## Features 🌟
 
