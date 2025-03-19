@@ -43,7 +43,7 @@ fun MainScreen(viewModel: TodoViewModel) {
     var showAddTaskDialog by rememberSaveable { mutableStateOf(false) }
     var showCompletedTasks by rememberSaveable { mutableStateOf(false) }
     var showCategoryProgress by rememberSaveable { mutableStateOf(false) }
-    var showMenuDrawer by rememberSaveable { mutableStateOf(false) }
+    var showMenuScreen by rememberSaveable { mutableStateOf(false) }
     var showContactsScreen by rememberSaveable { mutableStateOf(false) }
     
     // Get state
@@ -60,6 +60,26 @@ fun MainScreen(viewModel: TodoViewModel) {
     }
     
     // Handle screen navigation
+    if (showMenuScreen) {
+        MenuScreen(
+            viewModel = viewModel,
+            onNavigateBack = { showMenuScreen = false },
+            onNavigateToCompletedTasks = { 
+                showCompletedTasks = true
+                showMenuScreen = false
+            },
+            onNavigateToCategoryProgress = {
+                showCategoryProgress = true 
+                showMenuScreen = false
+            },
+            onNavigateToNpcMessages = {
+                showContactsScreen = true
+                showMenuScreen = false
+            }
+        )
+        return
+    }
+    
     if (showContactsScreen) {
         ContactsScreen(
             viewModel = viewModel,
@@ -101,7 +121,7 @@ fun MainScreen(viewModel: TodoViewModel) {
                     titleContentColor = MaterialTheme.colorScheme.onSurface
                 ),
                 navigationIcon = {
-                    IconButton(onClick = { showMenuDrawer = true }) {
+                    IconButton(onClick = { showMenuScreen = true }) {
                         Icon(Icons.Default.Menu, contentDescription = "Menu")
                     }
                 },
@@ -320,68 +340,6 @@ fun MainScreen(viewModel: TodoViewModel) {
                 )
             }
         }
-    }
-    
-    // Menu Drawer
-    if (showMenuDrawer) {
-        AlertDialog(
-            onDismissRequest = { showMenuDrawer = false },
-            title = { Text("Menu") },
-            text = {
-                Column {
-                    Button(
-                        onClick = { 
-                            showCompletedTasks = !showCompletedTasks
-                            showMenuDrawer = false 
-                        },
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Text(if (showCompletedTasks) "Hide Completed Tasks" else "Show Completed Tasks")
-                    }
-                    
-                    Spacer(modifier = Modifier.height(8.dp))
-                    
-                    Button(
-                        onClick = { 
-                            showCategoryProgress = true
-                            showMenuDrawer = false 
-                        },
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Text("Category Statistics")
-                    }
-                    
-                    Spacer(modifier = Modifier.height(8.dp))
-                    
-                    Button(
-                        onClick = { 
-                            showContactsScreen = true
-                            showMenuDrawer = false 
-                        },
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Text("NPC Messages")
-                    }
-                    
-                    Spacer(modifier = Modifier.height(8.dp))
-                    
-                    Button(
-                        onClick = { 
-                            viewModel.deleteAllCompletedTasks()
-                            showMenuDrawer = false 
-                        },
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Text("Clear Completed Tasks")
-                    }
-                }
-            },
-            confirmButton = {
-                TextButton(onClick = { showMenuDrawer = false }) {
-                    Text("Close")
-                }
-            }
-        )
     }
     
     // Regular Dialogs
