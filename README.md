@@ -13,7 +13,14 @@ A personal digital assistant (PDA) designed for the post-apocalyptic vault, help
 
 ## Screenshots 📸
 
-(Add screenshots here)
+![image](https://github.com/user-attachments/assets/042c97f3-04b8-486d-a5cd-587e35c9dbeb)
+![image](https://github.com/user-attachments/assets/ec4317f0-b718-4f12-b970-aa40f9e47f16)
+![image](https://github.com/user-attachments/assets/d89a337d-52be-4e9b-a1c5-c256e69b9f2d)
+![image](https://github.com/user-attachments/assets/10de3bb8-2fc0-4397-811b-084912d5d224)
+
+
+
+
 
 ## Installation 🚀
 
