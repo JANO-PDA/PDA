@@ -8,6 +8,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import java.util.Date
 import kotlin.random.Random
+import android.util.Log
 
 /**
  * Repository for managing NPCs and their messages
@@ -69,6 +70,9 @@ class NpcRepository {
         )
         
         _messages.value = _messages.value + npcMessage
+        
+        // Log for debugging
+        Log.d("NpcRepository", "Generated failure message: ${npcMessage.message} for category: ${category.name}")
     }
     
     // Mark a message as read

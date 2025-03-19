@@ -100,7 +100,7 @@ class TodoViewModel : ViewModel() {
             }
             
             // Add a sample NPC message if there are none
-            if (npcMessages.value.isEmpty()) {
+            if (npcMessages.value.size == 0) {
                 val categories = TaskCategory.values()
                 for (category in categories) {
                     npcRepository.generateCompletionMessage(category)
@@ -250,6 +250,10 @@ class TodoViewModel : ViewModel() {
         subtaskDifficultyValue = TaskDifficulty.EASY
     }
     
+    fun setAddSubtaskFor(task: Task) {
+        _addSubtaskFor.value = task
+    }
+
     fun dismissAddSubtaskDialog() {
         _addSubtaskFor.value = null
     }
@@ -383,21 +387,10 @@ class TodoViewModel : ViewModel() {
     }
     
     fun deleteAllCompletedTasks() {
-        val completedTasks = _tasks.value.filter { it.isCompleted }
-        
-        _tasks.update { currentTasks -> 
-            currentTasks.filter { !it.isCompleted }
-        }
+        _tasks.value = _tasks.value.filter { !it.isCompleted }
         
         // Save tasks after deletion
         saveTasks()
-        
-        // Cancel any reminders for completed tasks
-        completedTasks.forEach { task ->
-            if (task.hasReminder) {
-                alarmScheduler.cancelTaskReminder(task)
-            }
-        }
         
         // Update category stats
         updateCategoryStats()
@@ -538,7 +531,7 @@ class TodoViewModel : ViewModel() {
     
     // Get unread message count
     fun getUnreadMessageCount(): Int {
-        return npcRepository.getUnreadMessageCount()
+        return npcMessages.value.count { !it.isRead }
     }
     
     // Mark message as read
@@ -671,6 +664,10 @@ class TodoViewModel : ViewModel() {
         
         // Log for debugging
         Log.d("TodoViewModel", "Generated debug failure message for category: ${testCategory.name}")
+    }
+
+    fun updateUserProfile(updatedProfile: UserProfile) {
+        _userProfile.value = updatedProfile
     }
 
     init {

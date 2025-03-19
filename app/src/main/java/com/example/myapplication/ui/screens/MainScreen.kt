@@ -7,6 +7,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.automirrored.filled.List
+import androidx.compose.material.icons.automirrored.filled.Message
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -28,6 +29,8 @@ import com.example.myapplication.ui.components.AnimatedBackground
 import com.example.myapplication.ui.components.FloatingElement
 import com.example.myapplication.ui.components.PulsatingIcon
 import kotlin.random.Random
+import java.util.Date
+import kotlin.comparisons.compareByDescending
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -40,12 +43,12 @@ fun MainScreen(viewModel: TodoViewModel) {
     var showAddTaskDialog by rememberSaveable { mutableStateOf(false) }
     var showCompletedTasks by rememberSaveable { mutableStateOf(false) }
     var showCategoryProgress by rememberSaveable { mutableStateOf(false) }
-    var showContacts by rememberSaveable { mutableStateOf(false) }
+    var showMenuDrawer by rememberSaveable { mutableStateOf(false) }
+    var showMessagesDialog by rememberSaveable { mutableStateOf(false) }
     
     // Get state
     val showConfetti by viewModel.showConfetti.collectAsState()
     val npcMessages by viewModel.npcMessages.collectAsState()
-    val unreadMessageCount = viewModel.getUnreadMessageCount()
     
     // States
     val addSubtaskFor by viewModel.addSubtaskFor.collectAsState()
@@ -61,289 +64,397 @@ fun MainScreen(viewModel: TodoViewModel) {
     val topLevelActiveTasks = topLevelTasks.filter { !it.isCompleted }
     val subtaskMap = tasks.filter { it.parentTaskId != null }
         .groupBy { it.parentTaskId!! }
-        
-    // Drawer state
-    val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
-    val scope = rememberCoroutineScope()
     
-    // Handle screen navigation
-    when {
-        showCompletedTasks -> {
-            CompletedTasksScreen(
-                viewModel = viewModel,
-                onNavigateBack = { showCompletedTasks = false }
-            )
-        }
-        showCategoryProgress -> {
-            CategoryProgressScreen(
-                viewModel = viewModel,
-                onNavigateBack = { showCategoryProgress = false }
-            )
-        }
-        showContacts -> {
-            ContactsScreen(
-                viewModel = viewModel,
-                onNavigateBack = { showContacts = false }
-            )
-        }
-        else -> {
-            ModalNavigationDrawer(
-                drawerState = drawerState,
-                drawerContent = {
-                    ModalDrawerSheet {
-                        Spacer(modifier = Modifier.height(32.dp))
-                        
-                        // Navigation Items
-                        NavigationDrawerItem(
-                            icon = { Icon(Icons.Default.Check, contentDescription = "Completed Tasks") },
-                            label = { Text("Completed Tasks") },
-                            selected = false,
-                            onClick = { 
-                                scope.launch { 
-                                    drawerState.close()
-                                    showCompletedTasks = true
-                                }
-                            },
+    // Main content
+    Scaffold(
+        topBar = {
+            // Top bar with simple title
+            TopAppBar(
+                title = { Text("Tasks") },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.surface,
+                    titleContentColor = MaterialTheme.colorScheme.onSurface
+                ),
+                navigationIcon = {
+                    IconButton(onClick = { showMenuDrawer = true }) {
+                        Icon(Icons.Default.Menu, contentDescription = "Menu")
+                    }
+                },
+                actions = {
+                    // Message icon with badge
+                    IconButton(onClick = { showMessagesDialog = true }) {
+                        BadgedBox(
                             badge = {
-                                val completedCount = tasks.count { it.isCompleted && it.parentTaskId == null }
-                                if (completedCount > 0) {
-                                    Badge { Text(completedCount.toString()) }
+                                if (viewModel.getUnreadMessageCount() > 0) {
+                                    Badge { Text(viewModel.getUnreadMessageCount().toString()) }
                                 }
-                            },
-                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)
-                        )
-                        
-                        NavigationDrawerItem(
-                            icon = { Icon(Icons.AutoMirrored.Filled.List, contentDescription = "Category Progress") },
-                            label = { Text("Category Progress") },
-                            selected = false,
-                            onClick = { 
-                                scope.launch { 
-                                    drawerState.close()
-                                    showCategoryProgress = true 
-                                } 
-                            },
-                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)
-                        )
+                            }
+                        ) {
+                            Icon(Icons.AutoMirrored.Filled.Message, contentDescription = "Messages")
+                        }
                     }
                 }
+            )
+        },
+        floatingActionButton = {
+            // Floating action button for adding tasks
+            FloatingActionButton(
+                onClick = { showAddTaskDialog = true },
+                containerColor = MaterialTheme.colorScheme.primary,
+                contentColor = MaterialTheme.colorScheme.onPrimary
             ) {
-                // Use animated background
-                AnimatedBackground {
-                    // Add floating icons in the background
-                    Box(modifier = Modifier.fillMaxSize()) {
-                        // Add several pulsating icons at random positions
-                        repeat(5) { index ->
-                            val random = Random(index)
-                            val xPosition = random.nextInt(20, 80)
-                            val yPosition = random.nextInt(10, 90)
-                            val iconSize = random.nextInt(16, 25)
-                            
-                            // Choose icons based on index
-                            val icon = when(index % 3) {
-                                0 -> Icons.Default.Star
-                                1 -> Icons.Default.CheckCircle
-                                else -> AppIcons.getRankIcon(getCategoryRankLevel(index+1))
-                            }
-                            
-                            // Create a floating pulsating icon
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxSize()
-                                    .offset(
-                                        x = (xPosition * 0.01f * 100).dp, 
-                                        y = (yPosition * 0.01f * 100).dp
-                                    )
-                            ) {
-                                FloatingElement(
-                                    floatHeight = random.nextFloat() * 20f + 5f,
-                                    floatDuration = random.nextInt(2000, 5000)
-                                ) {
-                                    PulsatingIcon(
-                                        icon = icon,
-                                        contentDescription = null,
-                                        tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
-                                        rotateEnabled = random.nextBoolean(),
-                                        pulseEnabled = true,
-                                        pulseMinScale = 0.8f,
-                                        pulseMaxScale = 1.2f,
-                                        pulseDurationMs = random.nextInt(1000, 3000),
-                                        modifier = Modifier.size(iconSize.dp)
-                                    )
-                                }
-                            }
-                        }
-                        
-                        // Main content with the existing Scaffold
-                        Scaffold(
-                            topBar = {
-                                TopAppBar(
-                                    title = { Text("Tasks", Modifier.fillMaxWidth(), textAlign = TextAlign.Center) },
-                                    navigationIcon = {
-                                        IconButton(onClick = { scope.launch { drawerState.open() } }) {
-                                            Icon(
-                                                imageVector = Icons.Default.Menu,
-                                                contentDescription = "Open menu"
-                                            )
-                                        }
-                                    },
-                                    actions = {
-                                        // Contacts button with badge for unread messages
-                                        IconButton(onClick = { showContacts = true }) {
-                                            BadgedBox(
-                                                badge = {
-                                                    if (unreadMessageCount > 0) {
-                                                        Badge { Text(unreadMessageCount.toString()) }
-                                                    }
-                                                }
-                                            ) {
-                                                Icon(
-                                                    imageVector = Icons.Default.Forum,
-                                                    contentDescription = "Contacts"
-                                                )
-                                            }
-                                        }
-                                    }
-                                )
-                            },
-                            floatingActionButton = {
-                                FloatingActionButton(onClick = { showAddTaskDialog = true }) {
-                                    Icon(Icons.Default.Add, contentDescription = "Add Task")
-                                }
-                            }
-                        ) { padding ->
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxSize()
-                                    .padding(padding)
-                                    .pointerInput(Unit) {
-                                        detectHorizontalDragGestures { _, dragAmount ->
-                                            // Detect right swipe (positive dragAmount)
-                                            if (dragAmount > 10) {
-                                                // Open drawer on right swipe
-                                                scope.launch { drawerState.open() }
-                                            }
-                                        }
-                                    }
-                            ) {
-                                LazyColumn(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(16.dp),
-                                    verticalArrangement = Arrangement.spacedBy(8.dp)
-                                ) {
-                                    // User Profile Card
-                                    item {
-                                        UserProfileCard(
-                                            userProfile = userProfile,
-                                            modifier = Modifier.padding(vertical = 16.dp)
-                                        )
-                                    }
-                                    
-                                    // Tasks header
-                                    item {
-                                        Text(
-                                            text = "Active Tasks",
-                                            style = MaterialTheme.typography.titleLarge,
-                                            fontWeight = FontWeight.Bold,
-                                            modifier = Modifier.padding(vertical = 8.dp)
-                                        )
-                                    }
-                                    
-                                    // Task items
-                                    items(topLevelActiveTasks) { task ->
-                                        val taskSubtasks = subtaskMap[task.id] ?: emptyList()
-                                        val highlightedId by viewModel.highlightedTaskId.collectAsState()
-                                        val isHighlighted = task.id == highlightedId
-                                        
-                                        TaskItem(
-                                            task = task,
-                                            onComplete = { viewModel.completeTask(task) },
-                                            onDelete = { viewModel.deleteTask(task) },
-                                            subtasks = taskSubtasks.filter { !it.isCompleted },
-                                            onAddSubtask = { viewModel.showAddSubtaskDialog(it) },
-                                            onCompleteSubtask = { viewModel.completeSubtask(it) },
-                                            isHighlighted = isHighlighted
-                                        )
-                                    }
-                                    
-                                    // Empty state
-                                    item {
-                                        if (topLevelActiveTasks.isEmpty()) {
-                                            Column(
-                                                modifier = Modifier
-                                                    .fillMaxWidth()
-                                                    .padding(vertical = 32.dp),
-                                                horizontalAlignment = Alignment.CenterHorizontally
-                                            ) {
-                                                Text(
-                                                    text = "No active tasks",
-                                                    style = MaterialTheme.typography.titleLarge
-                                                )
-                                                
-                                                Spacer(modifier = Modifier.height(8.dp))
-                                                
-                                                Text(
-                                                    text = "Tap the + button to add a new task",
-                                                    style = MaterialTheme.typography.bodyLarge,
-                                                    textAlign = TextAlign.Center
-                                                )
-                                            }
-                                        }
-                                    }
-                                    
-                                    // Add only alarm permission fix if needed
-                                    item {
-                                        // Check if alarm permission is needed
-                                        val hasAlarmPerm = viewModel.checkAlarmPermissions()
-                                        
-                                        // Show fix button only if permission is missing
-                                        if (!hasAlarmPerm) {
-                                            Column(
-                                                modifier = Modifier
-                                                    .fillMaxWidth()
-                                                    .padding(bottom = 16.dp),
-                                                horizontalAlignment = Alignment.CenterHorizontally
-                                            ) {
-                                                Text(
-                                                    text = "⚠️ Reminders won't work without alarm permission",
-                                                    style = MaterialTheme.typography.bodySmall,
-                                                    color = MaterialTheme.colorScheme.error,
-                                                    textAlign = TextAlign.Center,
-                                                    modifier = Modifier.padding(bottom = 8.dp)
-                                                )
-                                                
-                                                Button(
-                                                    onClick = { viewModel.openAlarmPermissionSettings() },
-                                                    colors = ButtonDefaults.buttonColors(
-                                                        containerColor = MaterialTheme.colorScheme.errorContainer,
-                                                        contentColor = MaterialTheme.colorScheme.onErrorContainer
-                                                    )
-                                                ) {
-                                                    Text("Fix Alarm Permission")
-                                                }
-                                                
-                                                Text(
-                                                    text = "1. Tap 'Fix Alarm Permission'\n" +
-                                                          "2. Find this app in the list\n" +
-                                                          "3. Enable 'Use exact alarms'",
-                                                    style = MaterialTheme.typography.bodySmall,
-                                                    textAlign = TextAlign.Center,
-                                                    modifier = Modifier.padding(top = 8.dp)
-                                                )
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
+                Icon(Icons.Default.Add, contentDescription = "Add Task")
+            }
+        }
+    ) { paddingValues ->
+        // Main content
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(paddingValues)
+                .padding(horizontal = 16.dp)
+        ) {
+            Spacer(modifier = Modifier.height(16.dp))
+            
+            // User Profile Card
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                    contentColor = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp)
+                ) {
+                    // Header with icon
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Star,
+                            contentDescription = "User Profile",
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.requiredSize(24.dp)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = "User Profile",
+                            style = MaterialTheme.typography.titleLarge
+                        )
+                    }
+                    
+                    Spacer(modifier = Modifier.height(16.dp))
+                    
+                    // Level and XP
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Text(
+                            text = "Level:",
+                            style = MaterialTheme.typography.bodyLarge
+                        )
+                        Text(
+                            text = userProfile.level.toString(),
+                            style = MaterialTheme.typography.bodyLarge,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                    
+                    Spacer(modifier = Modifier.height(8.dp))
+                    
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Text(
+                            text = "Total XP:",
+                            style = MaterialTheme.typography.bodyLarge
+                        )
+                        Text(
+                            text = userProfile.totalXp.toString(),
+                            style = MaterialTheme.typography.bodyLarge,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                    
+                    Spacer(modifier = Modifier.height(16.dp))
+                    
+                    // XP Progress section
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Star,
+                            contentDescription = "XP Progress",
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.requiredSize(24.dp)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = "XP Progress",
+                            style = MaterialTheme.typography.titleMedium
+                        )
+                    }
+                    
+                    Spacer(modifier = Modifier.height(8.dp))
+                    
+                    // Progress bar
+                    val progress = calculateProgressToNextLevel(userProfile.totalXp)
+                    val xpForNextLevel = calculateXpForNextLevel(userProfile.totalXp)
+                    val xpNeeded = xpForNextLevel - userProfile.totalXp
+                    
+                    LinearProgressIndicator(
+                        progress = { progress },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(8.dp),
+                        color = MaterialTheme.colorScheme.primary,
+                        trackColor = MaterialTheme.colorScheme.primaryContainer
+                    )
+                    
+                    Spacer(modifier = Modifier.height(8.dp))
+                    
+                    // XP to next level
+                    Text(
+                        text = "$xpNeeded XP to Level ${userProfile.level + 1}",
+                        style = MaterialTheme.typography.titleLarge,
+                        color = MaterialTheme.colorScheme.primary,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.align(Alignment.CenterHorizontally)
+                    )
+                    
+                    Spacer(modifier = Modifier.height(4.dp))
+                    
+                    Text(
+                        text = "XP to next level: $xpNeeded",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.align(Alignment.CenterHorizontally)
+                    )
+                }
+            }
+            
+            Spacer(modifier = Modifier.height(24.dp))
+            
+            // Active Tasks section
+            Text(
+                text = "Active Tasks",
+                style = MaterialTheme.typography.headlineMedium,
+                fontWeight = FontWeight.Bold
+            )
+            
+            Spacer(modifier = Modifier.height(8.dp))
+            
+            // Task list
+            if (topLevelActiveTasks.isEmpty()) {
+                // Empty state
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .weight(1f),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.Center
+                    ) {
+                        Text(
+                            text = "No active tasks",
+                            style = MaterialTheme.typography.titleMedium,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            text = "Tap the + button to add a new task",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+                        )
                     }
                 }
+            } else {
+                // Task list with tasks
+                TaskList(
+                    tasks = topLevelActiveTasks,
+                    subtaskMap = subtaskMap,
+                    onTaskClick = { task ->
+                        viewModel.highlightTask(task.id)
+                    },
+                    onTaskComplete = { task ->
+                        viewModel.completeTask(task)
+                    },
+                    onAddSubtask = { task ->
+                        viewModel.setAddSubtaskFor(task)
+                    },
+                    viewModel = viewModel
+                )
             }
         }
     }
     
-    // Dialogs
+    // Menu Drawer
+    if (showMenuDrawer) {
+        AlertDialog(
+            onDismissRequest = { showMenuDrawer = false },
+            title = { Text("Menu") },
+            text = {
+                Column {
+                    Button(
+                        onClick = { 
+                            showCompletedTasks = !showCompletedTasks
+                            showMenuDrawer = false 
+                        },
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text(if (showCompletedTasks) "Hide Completed Tasks" else "Show Completed Tasks")
+                    }
+                    
+                    Spacer(modifier = Modifier.height(8.dp))
+                    
+                    Button(
+                        onClick = { 
+                            showCategoryProgress = true
+                            showMenuDrawer = false 
+                        },
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text("Category Statistics")
+                    }
+                    
+                    Spacer(modifier = Modifier.height(8.dp))
+                    
+                    Button(
+                        onClick = { 
+                            viewModel.deleteAllCompletedTasks()
+                            showMenuDrawer = false 
+                        },
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text("Clear Completed Tasks")
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { showMenuDrawer = false }) {
+                    Text("Close")
+                }
+            }
+        )
+    }
+    
+    // NPC Messages Dialog
+    if (showMessagesDialog) {
+        AlertDialog(
+            onDismissRequest = { showMessagesDialog = false },
+            title = { 
+                Row(
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Filled.Message,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("NPC Messages")
+                }
+            },
+            text = {
+                // Access the state value differently to avoid ambiguity
+                val messagesList = (npcMessages as State<List<NpcMessage>>).value
+                if (messagesList.isEmpty()) {
+                    Text(
+                        text = "No messages yet",
+                        style = MaterialTheme.typography.bodyLarge,
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                } else {
+                    // Use sortedByDescending with direct access to timestamp
+                    val sortedMessages = messagesList.sortedByDescending { it.timestamp.time }
+                    
+                    LazyColumn(
+                        modifier = Modifier.heightIn(max = 400.dp)
+                    ) {
+                        items(sortedMessages) { msg ->
+                            Card(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(vertical = 4.dp)
+                                    .clickable { 
+                                        viewModel.markMessageAsRead(msg.id)
+                                    },
+                                colors = CardDefaults.cardColors(
+                                    containerColor = if (msg.isRead) 
+                                        MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.7f)
+                                    else 
+                                        MaterialTheme.colorScheme.primaryContainer
+                                )
+                            ) {
+                                Column(
+                                    modifier = Modifier.padding(8.dp)
+                                ) {
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.SpaceBetween
+                                    ) {
+                                        Text(
+                                            text = msg.npcName,
+                                            style = MaterialTheme.typography.titleSmall,
+                                            fontWeight = FontWeight.Bold
+                                        )
+                                        Text(
+                                            text = formatTimestamp(msg.timestamp.time),
+                                            style = MaterialTheme.typography.bodySmall
+                                        )
+                                    }
+                                    
+                                    Spacer(modifier = Modifier.height(4.dp))
+                                    
+                                    Text(
+                                        text = msg.message,
+                                        style = MaterialTheme.typography.bodyMedium
+                                    )
+                                    
+                                    if (!msg.isRead) {
+                                        Spacer(modifier = Modifier.height(4.dp))
+                                        Text(
+                                            text = "NEW",
+                                            style = MaterialTheme.typography.labelSmall,
+                                            color = MaterialTheme.colorScheme.primary,
+                                            modifier = Modifier.align(Alignment.End)
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = { 
+                        viewModel.markAllMessagesAsRead()
+                        showMessagesDialog = false
+                    }
+                ) {
+                    Text("Mark All Read")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showMessagesDialog = false }) {
+                    Text("Close")
+                }
+            }
+        )
+    }
+    
+    // Regular Dialogs
     if (showAddTaskDialog) {
         AddTaskDialog(
             onDismiss = { showAddTaskDialog = false },
@@ -358,7 +469,7 @@ fun MainScreen(viewModel: TodoViewModel) {
         AddSubtaskDialog(
             parentTask = addSubtaskFor!!,
             onDismiss = { viewModel.dismissAddSubtaskDialog() },
-            onAddSubtask = {
+            onAddSubtask = { subtaskTitleValue, subtaskDescriptionValue, subtaskDifficultyValue ->
                 viewModel.addSubtask(
                     parentTaskId = addSubtaskFor!!.id,
                     title = subtaskTitleValue,
@@ -368,6 +479,79 @@ fun MainScreen(viewModel: TodoViewModel) {
                 viewModel.dismissAddSubtaskDialog()
             }
         )
+    }
+    
+    // Category Progress Dialog
+    if (showCategoryProgress) {
+        AlertDialog(
+            onDismissRequest = { showCategoryProgress = false },
+            title = { 
+                Row(
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Analytics,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("Category Progress")
+                }
+            },
+            text = {
+                LazyColumn {
+                    items(categoryStats.toList()) { (category, stats) ->
+                        Card(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 4.dp)
+                        ) {
+                            Column(
+                                modifier = Modifier.padding(8.dp)
+                            ) {
+                                Text(
+                                    text = category.name,
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.Bold
+                                )
+                                
+                                Spacer(modifier = Modifier.height(4.dp))
+                                
+                                LinearProgressIndicator(
+                                    progress = { stats.completionRate },
+                                    modifier = Modifier.fillMaxWidth()
+                                )
+                                
+                                Spacer(modifier = Modifier.height(4.dp))
+                                
+                                Text(
+                                    text = "${stats.completedTasks}/${stats.totalTasks} tasks completed (${(stats.completionRate * 100).toInt()}%)",
+                                    style = MaterialTheme.typography.bodySmall
+                                )
+                            }
+                        }
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { showCategoryProgress = false }) {
+                    Text("Close")
+                }
+            }
+        )
+    }
+}
+
+// Helper function to format timestamps
+private fun formatTimestamp(timestamp: Long): String {
+    val now = System.currentTimeMillis()
+    val diffMillis = now - timestamp
+    
+    return when {
+        diffMillis < 60000 -> "Just now"
+        diffMillis < 3600000 -> "${(diffMillis / 60000).toInt()}m ago"
+        diffMillis < 86400000 -> "${(diffMillis / 3600000).toInt()}h ago"
+        else -> "${(diffMillis / 86400000).toInt()}d ago"
     }
 }
 

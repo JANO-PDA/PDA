@@ -19,7 +19,7 @@ import com.example.myapplication.ui.viewmodel.subtaskDifficultyValue
 fun AddSubtaskDialog(
     parentTask: Task,
     onDismiss: () -> Unit,
-    onAddSubtask: () -> Unit
+    onAddSubtask: (String, String, TaskDifficulty) -> Unit
 ) {
     var title by remember { mutableStateOf(subtaskTitleValue) }
     var description by remember { mutableStateOf(subtaskDescriptionValue) }
@@ -94,7 +94,7 @@ fun AddSubtaskDialog(
             Button(
                 onClick = { 
                     if (title.isNotBlank()) {
-                        onAddSubtask()
+                        onAddSubtask(title, description, selectedDifficulty)
                     }
                 },
                 enabled = title.isNotBlank()
