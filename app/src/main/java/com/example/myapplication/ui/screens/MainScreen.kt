@@ -99,7 +99,7 @@ fun MainScreen(viewModel: TodoViewModel) {
         .groupBy { it.parentTaskId!! }
     
     // Navigation Drawer
-    NavigationDrawer(
+    ModalNavigationDrawer(
         drawerState = drawerState,
         drawerContent = {
             ModalDrawerSheet {
