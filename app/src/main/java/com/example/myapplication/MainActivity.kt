@@ -42,6 +42,13 @@ class MainActivity : ComponentActivity() {
         handleIntent(intent)
     }
     
+    override fun onResume() {
+        super.onResume()
+        
+        // Check for overdue tasks when app resumes
+        viewModel.checkForOverdueTasks()
+    }
+    
     private fun handleIntent(intent: android.content.Intent) {
         val action = intent.action
         

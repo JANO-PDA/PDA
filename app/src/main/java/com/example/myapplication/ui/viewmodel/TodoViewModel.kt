@@ -602,6 +602,37 @@ class TodoViewModel : ViewModel() {
             TaskDifficulty.NIGHTMARE -> 50
         }
     }
+
+    // Check for overdue tasks and generate failure messages
+    private fun checkOverdueTasks() {
+        val overdueTasks = _tasks.value.filter { 
+            !it.isCompleted && it.isOverdue() && !it.isSubtask()
+        }
+        
+        // Generate failure messages for overdue tasks
+        overdueTasks.forEach { task ->
+            // Generate NPC message for task failure
+            npcRepository.generateFailureMessage(task.category)
+            
+            // Log for debugging
+            Log.d("TodoViewModel", "Generated failure message for overdue task: ${task.id} - ${task.title}")
+        }
+    }
+    
+    // Function to check for overdue tasks - can be called periodically or on app start
+    fun checkForOverdueTasks() {
+        checkOverdueTasks()
+    }
+
+    init {
+        // Load tasks from storage
+        viewModelScope.launch {
+            loadTasks()
+            
+            // Check for overdue tasks on initialization
+            checkOverdueTasks()
+        }
+    }
 }
 
 data class CategoryStats(
