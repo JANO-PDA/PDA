@@ -44,6 +44,8 @@
                 <action android:name="com.example.myapplication.TASK_ALARM" />
                 <action android:name="com.example.myapplication.TEST_ALARM" />
                 <action android:name="com.example.myapplication.DIRECT_TEST" />
+                <!-- The following is a pattern that matches dynamic task alarm actions -->
+                <action android:name="com.example.myapplication.TASK_ALARM_*" />
                 <category android:name="android.intent.category.DEFAULT" />
             </intent-filter>
         </receiver>

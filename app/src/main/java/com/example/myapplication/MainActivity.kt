@@ -24,8 +24,8 @@ class MainActivity : ComponentActivity() {
         override fun run() {
             viewModel.checkForOverdueTasks()
             Log.d("MainActivity", "Periodic overdue task check executed")
-            // Schedule the next check in 1 second (instead of 1 minute)
-            handler.postDelayed(this, 1000)
+            // Run the check every minute instead of every second
+            handler.postDelayed(this, 60000) // 60 seconds instead of 1 second
         }
     }
 
@@ -37,6 +37,9 @@ class MainActivity : ComponentActivity() {
         
         // Handle notification intent if present
         handleIntent(intent)
+        
+        // Don't test notification system on every start - this can cause confusion with unexpected notifications
+        // testNotificationSystem()
         
         setContent {
             val userProfile by viewModel.userProfile.collectAsState()
@@ -81,6 +84,47 @@ class MainActivity : ComponentActivity() {
                 Log.d(TAG, "Opening from notification. Task ID: $taskId")
                 viewModel.highlightTask(taskId)
             }
+        }
+    }
+    
+    /**
+     * Test notification system - this helps verify the notification capability
+     */
+    private fun testNotificationSystem() {
+        try {
+            // Log test info
+            Log.d(TAG, "Testing notification system to verify configuration")
+            
+            // Create dummy test task for notifications
+            val dummyTask = com.example.myapplication.data.models.Task(
+                title = "Test Task",
+                description = "Test notification - please ignore",
+                difficulty = com.example.myapplication.data.models.TaskDifficulty.MEDIUM,
+                category = com.example.myapplication.data.models.TaskCategory.OTHER
+            )
+            
+            // Test through AlarmScheduler
+            val alarmScheduler = com.example.myapplication.notifications.AlarmScheduler(this)
+            
+            // Check AlarmManager permission for Android 12+
+            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S) {
+                val canScheduleAlarms = alarmScheduler.canScheduleExactAlarms()
+                Log.d(TAG, "Can schedule exact alarms: $canScheduleAlarms")
+            }
+            
+            // Trigger a test notification directly through NotificationHelper
+            val notificationHelper = com.example.myapplication.notifications.NotificationHelper(this)
+            val hasPermission = notificationHelper.hasNotificationPermission()
+            Log.d(TAG, "Notification permission: $hasPermission")
+            
+            if (hasPermission) {
+                notificationHelper.showTestNotification()
+                Log.d(TAG, "Test notification triggered directly")
+            } else {
+                Log.e(TAG, "Cannot show test notification - no permission")
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Error in test notification: ${e.message}", e)
         }
     }
 }

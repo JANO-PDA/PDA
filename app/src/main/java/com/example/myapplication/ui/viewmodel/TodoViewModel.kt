@@ -29,6 +29,7 @@ import java.time.ZoneId
 import java.time.Instant
 import java.time.Duration
 import com.example.myapplication.data.TaskStorage
+import android.os.Build
 
 class TodoViewModel : ViewModel() {
     private val _tasks = MutableStateFlow<List<Task>>(emptyList())
@@ -84,7 +85,7 @@ class TodoViewModel : ViewModel() {
             appContext = context
             
             // Create notification helper and channels
-            val notificationHelper = NotificationHelper(context)
+            notificationHelper = NotificationHelper(context)
             notificationHelper.createNotificationChannels()
             
             alarmScheduler = AlarmScheduler(context)
@@ -106,6 +107,20 @@ class TodoViewModel : ViewModel() {
                     npcRepository.generateCompletionMessage(category)
                 }
             }
+            
+            // Check if we can schedule exact alarms
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                val canScheduleAlarms = alarmScheduler.canScheduleExactAlarms()
+                Log.d("TodoViewModel", "Can schedule exact alarms: $canScheduleAlarms")
+                
+                if (!canScheduleAlarms) {
+                    Log.e("TodoViewModel", "Alarm permission not granted! Notifications for due tasks won't work")
+                    // This could be a reason for notifications not working
+                }
+            }
+            
+            // Test notification system
+            Log.d("TodoViewModel", "Notification permission: ${notificationHelper.hasNotificationPermission()}")
             
             // Log for debugging
             Log.d("TodoViewModel", "Initialized notification system")

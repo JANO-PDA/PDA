@@ -3,6 +3,7 @@ package com.example.myapplication.notifications
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
+import android.os.Build
 import android.os.PowerManager
 import android.util.Log
 import com.example.myapplication.MainActivity
@@ -42,6 +43,7 @@ class TaskAlarmReceiver : BroadcastReceiver() {
             val taskId = intent.getStringExtra(EXTRA_TASK_ID)
             if (taskId == null) {
                 Log.e(TAG, "Missing task ID in intent extras")
+                Log.d(TAG, "Available extras: ${intent.extras?.keySet()?.joinToString() ?: "none"}")
                 wakeLock.release()
                 return
             }
@@ -76,22 +78,32 @@ class TaskAlarmReceiver : BroadcastReceiver() {
             Log.d(TAG, "Notification permission: $hasPermission")
             
             if (hasPermission) {
-                // Create an intent that will open the main activity without completing the task
-                val mainIntent = Intent(context, MainActivity::class.java).apply {
-                    flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
-                    // We can pass the task ID to highlight it in the UI if needed
-                    putExtra("taskId", taskId)
-                    // Add action to indicate this is coming from a notification
-                    action = "com.example.myapplication.OPEN_FROM_NOTIFICATION"
+                try {
+                    // Create an intent that will open the main activity without completing the task
+                    val mainIntent = Intent(context, MainActivity::class.java).apply {
+                        flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+                        // We can pass the task ID to highlight it in the UI if needed
+                        putExtra("taskId", taskId)
+                        // Add action to indicate this is coming from a notification
+                        action = "com.example.myapplication.OPEN_FROM_NOTIFICATION"
+                    }
+                    
+                    notificationHelper.showTaskReminderNotification(task, mainIntent)
+                    Log.d(TAG, "Notification shown for task: $taskId")
+                } catch (e: Exception) {
+                    Log.e(TAG, "Error showing notification: ${e.message}", e)
                 }
-                
-                notificationHelper.showTaskReminderNotification(task, mainIntent)
-                Log.d(TAG, "Notification shown for task: $taskId")
             } else {
                 Log.e(TAG, "Cannot show notification: No permission")
+                // Try to request permission if possible
+                Log.d(TAG, "Android version: ${Build.VERSION.SDK_INT}")
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                    Log.d(TAG, "Need to request POST_NOTIFICATIONS permission")
+                }
             }
         } catch (e: Exception) {
             Log.e(TAG, "Error processing alarm broadcast: ${e.message}", e)
+            e.printStackTrace()
         } finally {
             // Release wake lock
             if (wakeLock.isHeld) {

@@ -12,6 +12,7 @@ import com.example.myapplication.data.models.TaskCategory
 import com.example.myapplication.data.models.TaskDifficulty
 import java.time.LocalDateTime
 import java.time.ZoneId
+import java.lang.Math
 
 /**
  * Helper class for scheduling alarms that will trigger notifications
@@ -78,10 +79,14 @@ class AlarmScheduler(private val context: Context) {
 
             // Create a unique request code based on the task ID
             val requestCode = task.id.hashCode()
+            
+            // Make sure the request code is positive (requestCode can be negative if hashCode is negative)
+            val positiveRequestCode = Math.abs(requestCode)
 
+            // Create the PendingIntent
             val pendingIntent = PendingIntent.getBroadcast(
                 context,
-                requestCode,
+                positiveRequestCode,
                 intent,
                 PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
             )
@@ -103,8 +108,13 @@ class AlarmScheduler(private val context: Context) {
                         pendingIntent
                     )
                 }
-                Log.d(TAG, "Scheduled reminder for task ${task.id} at ${task.dueDate} ${task.dueTime ?: "09:00"}")
+                
+                Log.d(TAG, "Successfully scheduled reminder for task ${task.id}")
+                Log.d(TAG, "Scheduled for: ${task.dueDate} ${task.dueTime ?: "09:00"}")
                 Log.d(TAG, "Trigger time in millis: $triggerTimeMillis, current time: ${System.currentTimeMillis()}")
+                
+                // Don't send an immediate test notification - this is causing the early notification issue
+                // The notification should only appear when the alarm actually triggers at the scheduled time
             } catch (e: Exception) {
                 Log.e(TAG, "Error setting alarm: ${e.message}", e)
             }

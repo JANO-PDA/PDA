@@ -146,6 +146,18 @@ class NotificationHelper(private val context: Context) {
         } catch (e: SecurityException) {
             // Handle the case where notification permission is not granted
             Log.e(TAG, "Security exception when showing notification: ${e.message}", e)
+            
+            // Alternate approach for testing - try showing a system Toast notification
+            try {
+                android.widget.Toast.makeText(
+                    context, 
+                    "Task Reminder: ${task.title}", 
+                    android.widget.Toast.LENGTH_LONG
+                ).show()
+                Log.d(TAG, "Shown Toast notification as fallback")
+            } catch (e2: Exception) {
+                Log.e(TAG, "Even Toast notification failed: ${e2.message}")
+            }
         } catch (e: Exception) {
             // Handle any other exceptions
             Log.e(TAG, "Error showing notification: ${e.message}", e)
