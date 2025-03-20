@@ -159,60 +159,215 @@ fun AddTaskDialog(
                 }
                 
                 Text("Difficulty", style = MaterialTheme.typography.titleSmall)
-                LazyColumn(
+                Column(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(120.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp),
-                    contentPadding = PaddingValues(vertical = 8.dp)
+                        .padding(vertical = 8.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    items(TaskDifficulty.values()) { difficulty ->
+                    // First row of difficulties (EASY and MEDIUM)
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        // EASY difficulty
                         FilterChip(
-                            selected = selectedDifficulty == difficulty,
-                            onClick = { selectedDifficulty = difficulty },
-                            label = { 
-                                Text(
-                                    text = difficulty.name,
-                                    textAlign = TextAlign.Center,
-                                    modifier = Modifier.fillMaxWidth()
-                                )
-                            },
-                            modifier = Modifier.fillMaxWidth()
+                            selected = selectedDifficulty == TaskDifficulty.EASY,
+                            onClick = { selectedDifficulty = TaskDifficulty.EASY },
+                            label = { Text(text = "EASY") },
+                            modifier = Modifier.weight(1f, fill = false)
+                        )
+                        
+                        Spacer(modifier = Modifier.width(8.dp))
+                        
+                        // MEDIUM difficulty
+                        FilterChip(
+                            selected = selectedDifficulty == TaskDifficulty.MEDIUM,
+                            onClick = { selectedDifficulty = TaskDifficulty.MEDIUM },
+                            label = { Text(text = "MEDIUM") },
+                            modifier = Modifier.weight(1f, fill = false)
+                        )
+                    }
+                    
+                    // Second row of difficulties (HARD and NIGHTMARE)
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        // HARD difficulty
+                        FilterChip(
+                            selected = selectedDifficulty == TaskDifficulty.HARD,
+                            onClick = { selectedDifficulty = TaskDifficulty.HARD },
+                            label = { Text(text = "HARD") },
+                            modifier = Modifier.weight(1f, fill = false)
+                        )
+                        
+                        Spacer(modifier = Modifier.width(8.dp))
+                        
+                        // NIGHTMARE difficulty
+                        FilterChip(
+                            selected = selectedDifficulty == TaskDifficulty.NIGHTMARE,
+                            onClick = { selectedDifficulty = TaskDifficulty.NIGHTMARE },
+                            label = { Text(text = "NIGHTMARE") },
+                            modifier = Modifier.weight(1f, fill = false)
                         )
                     }
                 }
                 
                 Text("Category", style = MaterialTheme.typography.titleSmall)
-                LazyColumn(
+                Column(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(150.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp),
-                    contentPadding = PaddingValues(vertical = 8.dp)
+                        .padding(vertical = 8.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    items(TaskCategory.values()) { category ->
+                    // First row of categories
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        // WORK category
                         FilterChip(
-                            selected = selectedCategory == category,
-                            onClick = { selectedCategory = category },
+                            selected = selectedCategory == TaskCategory.WORK,
+                            onClick = { selectedCategory = TaskCategory.WORK },
                             label = { 
                                 Row(
-                                    modifier = Modifier.fillMaxWidth(),
                                     horizontalArrangement = Arrangement.Center,
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
                                     Icon(
-                                        imageVector = AppIcons.getCategoryIcon(category),
+                                        imageVector = AppIcons.getCategoryIcon(TaskCategory.WORK),
                                         contentDescription = null,
                                         modifier = Modifier.size(20.dp)
                                     )
-                                    Spacer(modifier = Modifier.width(8.dp))
-                                    Text(
-                                        text = category.name,
-                                        textAlign = TextAlign.Center
-                                    )
+                                    Spacer(modifier = Modifier.width(4.dp))
+                                    Text(text = "WORK")
                                 }
                             },
-                            modifier = Modifier.fillMaxWidth()
+                            modifier = Modifier.weight(1f, fill = false)
+                        )
+                        
+                        Spacer(modifier = Modifier.width(8.dp))
+                        
+                        // STUDY category
+                        FilterChip(
+                            selected = selectedCategory == TaskCategory.STUDY,
+                            onClick = { selectedCategory = TaskCategory.STUDY },
+                            label = { 
+                                Row(
+                                    horizontalArrangement = Arrangement.Center,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Icon(
+                                        imageVector = AppIcons.getCategoryIcon(TaskCategory.STUDY),
+                                        contentDescription = null,
+                                        modifier = Modifier.size(20.dp)
+                                    )
+                                    Spacer(modifier = Modifier.width(4.dp))
+                                    Text(text = "STUDY")
+                                }
+                            },
+                            modifier = Modifier.weight(1f, fill = false)
+                        )
+                    }
+                    
+                    // Second row of categories
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        // HEALTH category
+                        FilterChip(
+                            selected = selectedCategory == TaskCategory.HEALTH,
+                            onClick = { selectedCategory = TaskCategory.HEALTH },
+                            label = { 
+                                Row(
+                                    horizontalArrangement = Arrangement.Center,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Icon(
+                                        imageVector = AppIcons.getCategoryIcon(TaskCategory.HEALTH),
+                                        contentDescription = null,
+                                        modifier = Modifier.size(20.dp)
+                                    )
+                                    Spacer(modifier = Modifier.width(4.dp))
+                                    Text(text = "HEALTH")
+                                }
+                            },
+                            modifier = Modifier.weight(1f, fill = false)
+                        )
+                        
+                        Spacer(modifier = Modifier.width(8.dp))
+                        
+                        // PERSONAL category
+                        FilterChip(
+                            selected = selectedCategory == TaskCategory.PERSONAL,
+                            onClick = { selectedCategory = TaskCategory.PERSONAL },
+                            label = { 
+                                Row(
+                                    horizontalArrangement = Arrangement.Center,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Icon(
+                                        imageVector = AppIcons.getCategoryIcon(TaskCategory.PERSONAL),
+                                        contentDescription = null,
+                                        modifier = Modifier.size(20.dp)
+                                    )
+                                    Spacer(modifier = Modifier.width(4.dp))
+                                    Text(text = "PERSONAL")
+                                }
+                            },
+                            modifier = Modifier.weight(1f, fill = false)
+                        )
+                    }
+                    
+                    // Third row of categories
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        // SHOPPING category
+                        FilterChip(
+                            selected = selectedCategory == TaskCategory.SHOPPING,
+                            onClick = { selectedCategory = TaskCategory.SHOPPING },
+                            label = { 
+                                Row(
+                                    horizontalArrangement = Arrangement.Center,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Icon(
+                                        imageVector = AppIcons.getCategoryIcon(TaskCategory.SHOPPING),
+                                        contentDescription = null,
+                                        modifier = Modifier.size(20.dp)
+                                    )
+                                    Spacer(modifier = Modifier.width(4.dp))
+                                    Text(text = "SHOPPING")
+                                }
+                            },
+                            modifier = Modifier.weight(1f, fill = false)
+                        )
+                        
+                        Spacer(modifier = Modifier.width(8.dp))
+                        
+                        // OTHER category
+                        FilterChip(
+                            selected = selectedCategory == TaskCategory.OTHER,
+                            onClick = { selectedCategory = TaskCategory.OTHER },
+                            label = { 
+                                Row(
+                                    horizontalArrangement = Arrangement.Center,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Icon(
+                                        imageVector = AppIcons.getCategoryIcon(TaskCategory.OTHER),
+                                        contentDescription = null,
+                                        modifier = Modifier.size(20.dp)
+                                    )
+                                    Spacer(modifier = Modifier.width(4.dp))
+                                    Text(text = "OTHER")
+                                }
+                            },
+                            modifier = Modifier.weight(1f, fill = false)
                         )
                     }
                 }

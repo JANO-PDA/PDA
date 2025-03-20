@@ -66,13 +66,9 @@ class TodoViewModel : ViewModel() {
     private val _confettiPosition = MutableStateFlow(Pair(0f, 0f))
     val confettiPosition: StateFlow<Pair<Float, Float>> = _confettiPosition.asStateFlow()
     
-    // State for showing task created animation
-    private val _showTaskCreatedAnimation = MutableStateFlow(false)
-    val showTaskCreatedAnimation: StateFlow<Boolean> = _showTaskCreatedAnimation.asStateFlow()
-    
     // Track the most recently created task ID
-    private val _lastCreatedTaskId = MutableStateFlow<String?>(null)
-    val lastCreatedTaskId: StateFlow<String?> = _lastCreatedTaskId.asStateFlow()
+    private val _lastCreatedTaskId = MutableStateFlow("")
+    val lastCreatedTaskId: StateFlow<String> = _lastCreatedTaskId.asStateFlow()
     
     // Application context for playing sounds
     private var appContext: Context? = null
@@ -229,9 +225,8 @@ class TodoViewModel : ViewModel() {
         // Update category stats
         updateCategoryStats()
         
-        // Set the last created task ID and show animation
+        // Set the last created task ID but don't trigger animation
         _lastCreatedTaskId.value = newTask.id
-        _showTaskCreatedAnimation.value = true
     }
     
     fun addSubtask(
@@ -289,7 +284,7 @@ class TodoViewModel : ViewModel() {
     fun completeTask(task: Task) {
         // Set task as completed
         val updatedTask = task.copy(
-            isCompleted = true,
+            isCompleted = true, 
             completedAt = System.currentTimeMillis()
         )
         
@@ -313,11 +308,11 @@ class TodoViewModel : ViewModel() {
         // Track completion in category stats
         updateCategoryStats()
 
-        // Show confetti animation
-        _showConfetti.value = true
+        // Comment out the confetti animation
+        // _showConfetti.value = true
         viewModelScope.launch {
-            delay(3000)  // Show confetti for 3 seconds
-            _showConfetti.value = false
+            // delay(3000)  // Show confetti for 3 seconds
+            // _showConfetti.value = false
         }
         
         // Save tasks
@@ -688,10 +683,18 @@ class TodoViewModel : ViewModel() {
         _userProfile.value = updatedProfile
     }
 
-    // Function to hide the task created animation
-    fun hideTaskCreatedAnimation() {
-        _showTaskCreatedAnimation.value = false
-        _lastCreatedTaskId.value = null
+    // Set app theme
+    fun setAppTheme(theme: AppTheme) {
+        _userProfile.update { currentProfile ->
+            currentProfile.copy(selectedTheme = theme)
+        }
+    }
+    
+    // Set dark mode (null = follow system, true = dark, false = light)
+    fun setDarkMode(darkMode: Boolean?) {
+        _userProfile.update { currentProfile ->
+            currentProfile.copy(darkMode = darkMode)
+        }
     }
 
     init {

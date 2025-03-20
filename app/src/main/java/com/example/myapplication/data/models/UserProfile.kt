@@ -7,6 +7,7 @@ data class UserProfile(
     val categoryXp: Map<TaskCategory, Int> = TaskCategory.values().associateWith { 0 },
     val categoryTasksCompleted: Map<TaskCategory, Int> = TaskCategory.values().associateWith { 0 },
     val selectedTheme: AppTheme = AppTheme.ZONE_EXPLORER,
+    val darkMode: Boolean? = null,
     val taskStreak: Int = 0,
     val lastCompletedTaskDate: Long? = null
 )

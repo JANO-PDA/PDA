@@ -43,7 +43,10 @@ class MainActivity : ComponentActivity() {
         
         setContent {
             val userProfile by viewModel.userProfile.collectAsState()
-            TodoAppTheme(appTheme = userProfile.selectedTheme) {
+            TodoAppTheme(
+                appTheme = userProfile.selectedTheme,
+                useDarkTheme = userProfile.darkMode
+            ) {
                 // Request notification permission if needed (Android 13+)
                 RequestNotificationPermission()
                 

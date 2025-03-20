@@ -3,7 +3,7 @@
 ## Animation System Roadmap
 
 ### Phase 1: Foundation (Current)
-- **Basic Task Creation Animation**: Maintain the current single animation style for all task creations
+- **Native Compose Animations**: Use built-in Compose animations for all UI feedback
 - **Performance Optimization**: Focus on ensuring animations are lightweight and non-blocking
 - **Consistent UX**: Ensure a uniform animation experience across the application
 
@@ -18,11 +18,12 @@
 - **Animation Settings**: Allow users to control animation intensity or disable animations
 
 ### Decision Notes
-- **Category-Specific Animations**: This approach was explored but ultimately reverted in favor of a consistent, single animation style. The decision prioritizes:
-  - Maintainability: Simpler codebase with fewer animation assets to manage
+- **Native Animations Over Libraries**: The decision to use native Compose animations instead of Lottie or other animation libraries prioritizes:
+  - Smaller App Size: No additional animation assets or libraries needed
+  - Maintainability: Simpler codebase with fewer dependencies to manage
+  - Performance: Reduced resource usage and simpler state management
   - Consistency: Unified visual language across the application
-  - Performance: Reduced resource usage and simplified state management
-  - User Experience: Predictable interface behavior
+- **Category-Specific Animations**: This approach was explored but ultimately reverted in favor of a consistent, single animation style.
 
 ## UI Enhancement Roadmap
 
@@ -48,5 +49,6 @@
 - **Startup Time**: Optimize application launch experience
 - **Memory Usage**: Reduce overall memory footprint
 - **Battery Impact**: Minimize background processing requirements
+- **Dependencies**: Continue to minimize external dependencies where native solutions exist
 
 *Last Updated: June 2, 2024* 

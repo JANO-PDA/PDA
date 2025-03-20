@@ -20,10 +20,12 @@ import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.example.myapplication.data.models.Task
 import com.example.myapplication.data.models.TaskDifficulty
+import com.example.myapplication.data.models.TaskCategory
 import com.example.myapplication.ui.theme.AppIcons
 import com.example.myapplication.ui.theme.lineThrough
 import com.example.myapplication.ui.theme.none
@@ -41,9 +43,7 @@ fun TaskItem(
     onAddSubtask: ((Task) -> Unit)? = null,
     onCompleteSubtask: ((Task) -> Unit)? = null,
     level: Int = 0, // Indentation level for subtasks
-    isHighlighted: Boolean = false,
-    isNewlyCreated: Boolean = false,
-    onAnimationFinished: (() -> Unit)? = null
+    isHighlighted: Boolean = false
 ) {
     var isCompleting by remember { mutableStateOf(false) }
     var isExpanded by remember { mutableStateOf(isHighlighted) } // Auto-expand if highlighted
@@ -65,7 +65,7 @@ fun TaskItem(
     val scale by animateFloatAsState(
         targetValue = if (isCompleting) 0.8f else if (isHighlighted) 1.05f else 1f,
         animationSpec = spring(
-            dampingRatio = Spring.DampingRatioMediumBouncy,
+            dampingRatio = Spring.DampingRatioNoBouncy,
             stiffness = Spring.StiffnessLow
         ),
         label = "scale"
@@ -73,7 +73,7 @@ fun TaskItem(
     
     val alpha by animateFloatAsState(
         targetValue = if (isCompleting) 0f else 1f,
-        animationSpec = tween(durationMillis = 300),
+        animationSpec = tween(durationMillis = 200),
         label = "alpha"
     )
     
@@ -81,9 +81,9 @@ fun TaskItem(
     val highlightAnim = rememberInfiniteTransition(label = "highlightPulse")
     val highlightPulse by highlightAnim.animateFloat(
         initialValue = 1f,
-        targetValue = 1.05f,
+        targetValue = 1.03f,
         animationSpec = infiniteRepeatable(
-            animation = tween(700),
+            animation = tween(800),
             repeatMode = RepeatMode.Reverse
         ),
         label = "highlightPulse"
@@ -102,7 +102,10 @@ fun TaskItem(
             isDueSoon -> MaterialTheme.colorScheme.tertiaryContainer
             else -> MaterialTheme.colorScheme.surface
         },
-        animationSpec = tween(durationMillis = 300),
+        animationSpec = tween(
+            durationMillis = 150,
+            easing = LinearOutSlowInEasing
+        ),
         label = "background"
     )
     
@@ -115,12 +118,12 @@ fun TaskItem(
         label = "borderWidth"
     )
     
-    // Rotation for dropdown arrow with bouncy effect
+    // Rotation for dropdown arrow with smoother effect
     val arrowRotation by animateFloatAsState(
         targetValue = if (isExpanded) 180f else 0f,
-        animationSpec = spring(
-            dampingRatio = Spring.DampingRatioMediumBouncy,
-            stiffness = Spring.StiffnessLow
+        animationSpec = tween(
+            durationMillis = 200,
+            easing = FastOutSlowInEasing
         ),
         label = "arrowRotation"
     )
@@ -140,10 +143,11 @@ fun TaskItem(
             modifier = Modifier
                 .fillMaxWidth()
                 .scale(itemScale)
+                .alpha(alpha)
                 .animateContentSize(
-                    animationSpec = spring(
-                        dampingRatio = Spring.DampingRatioMediumBouncy,
-                        stiffness = Spring.StiffnessLow
+                    animationSpec = tween(
+                        durationMillis = 150, 
+                        easing = LinearOutSlowInEasing
                     )
                 ),
             elevation = CardDefaults.cardElevation(
@@ -162,14 +166,6 @@ fun TaskItem(
                     .fillMaxWidth()
                     .padding(16.dp),
             ) {
-                // Show creation animation for newly created tasks
-                if (isNewlyCreated) {
-                    TaskCreatedAnimation(
-                        isVisible = true,
-                        onAnimationFinished = { onAnimationFinished?.invoke() }
-                    )
-                }
-                
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
@@ -305,8 +301,16 @@ fun TaskItem(
                 // Show subtasks if expanded and parent has subtasks
                 AnimatedVisibility(
                     visible = isExpanded && subtasks.isNotEmpty(),
-                    enter = expandVertically() + fadeIn(),
-                    exit = shrinkVertically() + fadeOut()
+                    enter = expandVertically(
+                        animationSpec = tween(150, easing = LinearOutSlowInEasing)
+                    ) + fadeIn(
+                        animationSpec = tween(150)
+                    ),
+                    exit = shrinkVertically(
+                        animationSpec = tween(150, easing = LinearOutSlowInEasing)
+                    ) + fadeOut(
+                        animationSpec = tween(100)
+                    )
                 ) {
                     Column(
                         modifier = Modifier
@@ -360,8 +364,16 @@ fun TaskItem(
                 
                 AnimatedVisibility(
                     visible = isExpanded,
-                    enter = expandVertically() + fadeIn(),
-                    exit = shrinkVertically() + fadeOut()
+                    enter = expandVertically(
+                        animationSpec = tween(150, easing = LinearOutSlowInEasing)
+                    ) + fadeIn(
+                        animationSpec = tween(150)
+                    ),
+                    exit = shrinkVertically(
+                        animationSpec = tween(150, easing = LinearOutSlowInEasing)
+                    ) + fadeOut(
+                        animationSpec = tween(100)
+                    )
                 ) {
                     Row(
                         modifier = Modifier
@@ -404,8 +416,7 @@ fun TaskItem(
                                     onClick = {
                                         scope.launch {
                                             isCompleting = true
-                                            // Delay the actual completion to show the animation
-                                            delay(200)
+                                            delay(150)
                                             onComplete()
                                         }
                                     }
@@ -418,7 +429,15 @@ fun TaskItem(
                                 }
                                 
                                 // Delete button
-                                IconButton(onClick = onDelete) {
+                                IconButton(
+                                    onClick = {
+                                        scope.launch {
+                                            isCompleting = true
+                                            delay(150)
+                                            onDelete()
+                                        }
+                                    }
+                                ) {
                                     Icon(
                                         imageVector = Icons.Default.Delete,
                                         contentDescription = "Delete task",

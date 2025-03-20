@@ -33,7 +33,6 @@ import kotlinx.coroutines.launch
 import com.example.myapplication.ui.components.AnimatedBackground
 import com.example.myapplication.ui.components.FloatingElement
 import com.example.myapplication.ui.components.PulsatingIcon
-import com.example.myapplication.ui.components.TaskCreatedAnimation
 import kotlin.random.Random
 import java.util.Date
 import kotlin.comparisons.compareByDescending
@@ -50,11 +49,11 @@ fun MainScreen(viewModel: TodoViewModel) {
     var showCompletedTasks by rememberSaveable { mutableStateOf(false) }
     var showCategoryProgress by rememberSaveable { mutableStateOf(false) }
     var showContactsScreen by rememberSaveable { mutableStateOf(false) }
+    var showSettingsScreen by rememberSaveable { mutableStateOf(false) }
     
     // Get state
     val showConfetti by viewModel.showConfetti.collectAsState()
     val npcMessages by viewModel.npcMessages.collectAsState()
-    val showTaskCreatedAnimation by viewModel.showTaskCreatedAnimation.collectAsState()
     
     // States
     val addSubtaskFor by viewModel.addSubtaskFor.collectAsState()
@@ -93,6 +92,14 @@ fun MainScreen(viewModel: TodoViewModel) {
         CategoryProgressScreen(
             viewModel = viewModel,
             onNavigateBack = { showCategoryProgress = false }
+        )
+        return
+    }
+    
+    if (showSettingsScreen) {
+        SettingsScreen(
+            viewModel = viewModel,
+            onNavigateBack = { showSettingsScreen = false }
         )
         return
     }
@@ -154,6 +161,19 @@ fun MainScreen(viewModel: TodoViewModel) {
                         scope.launch {
                             drawerState.close()
                             showCategoryProgress = true
+                        }
+                    },
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)
+                )
+                
+                NavigationDrawerItem(
+                    icon = { Icon(Icons.Default.Settings, contentDescription = "Settings") },
+                    label = { Text("Settings") },
+                    selected = false,
+                    onClick = { 
+                        scope.launch {
+                            drawerState.close()
+                            showSettingsScreen = true
                         }
                     },
                     modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)
@@ -398,14 +418,13 @@ fun MainScreen(viewModel: TodoViewModel) {
             }
             
             // Show confetti animation if needed
-            if (showConfetti) {
-                val confettiPosition by viewModel.confettiPosition.collectAsState()
-                ConfettiAnimation(
-                    numConfetti = 100,
-                    durationMillis = 2000,
-                    onAnimationEnd = {}
-                )
-            }
+            // if (showConfetti) {
+            //     val confettiPosition by viewModel.confettiPosition.collectAsState()
+            //     ConfettiAnimation(
+            //         numConfetti = 100,
+            //         position = confettiPosition
+            //     )
+            // }
         }
     }
     

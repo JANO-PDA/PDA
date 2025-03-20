@@ -140,13 +140,17 @@ fun MyApplicationTheme(
 @Composable
 fun TodoAppTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
+    useDarkTheme: Boolean? = null,
     appTheme: AppTheme = AppTheme.ZONE_EXPLORER,
     content: @Composable () -> Unit
 ) {
+    // Use explicit dark theme setting if provided, otherwise fall back to system setting
+    val isDarkTheme = useDarkTheme ?: darkTheme
+    
     val colorScheme = when (appTheme) {
-        AppTheme.ZONE_EXPLORER -> if (darkTheme) ZoneExplorerDarkColors else ZoneExplorerLightColors
-        AppTheme.RADIATION -> if (darkTheme) RadiationDarkColors else RadiationLightColors
-        AppTheme.PRIPYAT -> if (darkTheme) PripyatDarkColors else PripyatLightColors
+        AppTheme.ZONE_EXPLORER -> if (isDarkTheme) ZoneExplorerDarkColors else ZoneExplorerLightColors
+        AppTheme.RADIATION -> if (isDarkTheme) RadiationDarkColors else RadiationLightColors
+        AppTheme.PRIPYAT -> if (isDarkTheme) PripyatDarkColors else PripyatLightColors
     }
 
     MaterialTheme(
