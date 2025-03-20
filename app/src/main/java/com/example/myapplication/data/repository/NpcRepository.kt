@@ -253,12 +253,22 @@ class NpcRepository {
                 completionMessages = listOf(
                     "You got what you needed. Smart move.",
                     "Preparedness is the difference between a survivor and a corpse.",
-                    "You planned ahead? Good. That's rare."
+                    "You planned ahead? Good. That's rare.",
+                    "Tch… Another task done? Don't get cocky. You're still breathing, but that's about it.",
+                    "You think that was tough? Hah! That was just the warm-up, rookie.",
+                    "A real survivor doesn't just finish tasks. They make sure no one else can do them better.",
+                    "Hmph. Maybe you got potential after all. Or maybe it was just dumb luck.",
+                    "Every job done is one less reason for me to throw you to the wolves.",
+                    "One step ahead is still behind. Don't celebrate yet."
                 ),
                 failureMessages = listOf(
                     "No supplies? No problem. Just hope you don't get hungry.",
                     "A fool and their last meal are soon parted.",
-                    "Ever seen someone desperate? It's not pretty. Stock up next time."
+                    "Ever seen someone desperate? It's not pretty. Stock up next time.",
+                    "You failed? Expected. The world's full of losers. Guess you fit right in.",
+                    "If you're not working, you're wasting oxygen. And I don't like waste.",
+                    "Slacking off? I've seen corpses move faster than you.",
+                    "Next time you screw up, don't bother coming back. I don't deal with dead weight."
                 ),
                 isPrimary = true
             ),
@@ -271,12 +281,22 @@ class NpcRepository {
                 completionMessages = listOf(
                     "You stocked up? You're smarter than most.",
                     "A full bag today keeps desperation away tomorrow.",
-                    "Supplies are life. Don't forget that."
+                    "Supplies are life. Don't forget that.",
+                    "Task executed flawlessly. That's how it should be done.",
+                    "No hesitation, no missteps. Keep this level of efficiency.",
+                    "Progress demands action. You acted. Good.",
+                    "Another objective cleared. We don't celebrate—we move forward.",
+                    "Success isn't luck. It's discipline. Maintain it."
                 ),
                 failureMessages = listOf(
                     "No supplies? Hope you like bartering with bullets.",
                     "Hungry, cold, unprepared—you're setting yourself up for trouble.",
-                    "Ran out of essentials? What's next, selling your boots?"
+                    "Ran out of essentials? What's next, selling your boots?",
+                    "Failure is costly. Make sure you can afford it.",
+                    "You miscalculated. Correct it. Don't repeat it.",
+                    "Mistakes happen. Weakness happens. What matters is how you eliminate them.",
+                    "An error uncorrected is a liability. Fix it or it will bury you.",
+                    "You're either in control, or you're at the mercy of chaos. Right now, you are the latter."
                 )
             ),
             

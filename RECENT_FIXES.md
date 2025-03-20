@@ -1,12 +1,27 @@
 # PDA App - Recent Fixes
 
 ## Latest Update
+- **Expanded NPC dialogues**: Added new dialogue lines for shopping category NPCs (Grifter and Viktor "The Mule")
+- **Repositioned add task button**: Moved from bottom right to beside "Active Tasks" header for better UX
+- **Implemented rotation animation**: Added paper folding effect for "Study" category tasks
 - **Implemented dark mode**: Added full support for system-based, light, and dark themes
 - **Enhanced theme customization**: Added dropdown menu for selecting theme preferences
 - **Fixed deprecated components**: Updated Divider components to HorizontalDivider
 - **Improved icon usage**: Replaced deprecated icons with auto-mirrored versions
 
 ## UI Enhancements
+
+### Task Button Repositioning
+- **Improved add task button placement**: Moved from floating action button to inline beside header
+- **Enhanced contextual relevance**: Better association between button and task list
+- **Improved empty state message**: Updated empty state to reflect new button position
+- **Refined UI layout**: Better spacing and alignment for main screen components
+
+### Animation Improvements
+- **Study category animation**: Implemented paper folding effect specifically for Study tasks
+- **Simplified animation code**: Replaced complex animations with native Compose animations
+- **Improved performance**: Optimized animation transitions and effects
+- **Fixed compilation issues**: Resolved issues with graphicsLayer implementation
 
 ### Dark Mode Implementation
 - **Theme toggle options**: Added system default, light, and dark mode options
@@ -24,6 +39,12 @@
 - **Simplified animation code**: Implemented cleaner animation patterns for better maintenance
 - **Improved performance**: Reduced overhead of animations with more optimized implementation
 - **Animation performance**: Optimized remaining animations to be less intrusive and more contextual
+
+## NPC System Enhancements
+- **Expanded shopping NPC dialogues**: Added additional dialogue lines for Grifter and Viktor "The Mule"
+- **More varied feedback**: Enhanced variety in NPC responses to task completion and failure
+- **Enhanced character development**: Strengthened NPC personalities through expanded dialogue
+- **Future API integration potential**: Explored options for AI-generated NPC dialogue
 
 ## Notification System
 - **Corrected notification timing**: Fixed issue that was causing notifications to be delivered earlier than scheduled
@@ -79,9 +100,10 @@
 - Reduced app dependencies by focusing on native capabilities
 
 ## Next Planned Improvements
-- Add custom notification sounds based on task priority
-- Optimize battery usage for background processes
-- Implement smoother transitions between screens
-- Add category-specific task templates for faster creation
+- **Explore AI integration**: Investigate API options for dynamic NPC dialogue generation
+- **Enhanced animations**: Develop additional category-specific animations
+- **Add custom notification sounds**: Create category-based notification sound effects
+- **Optimize battery usage**: Further refinement of background processes
+- **Implement smoother transitions**: Enhance navigation between screens
 
-*Last Updated: June 5, 2024* 
+*Last Updated: June 20, 2024* 

@@ -216,16 +216,7 @@ fun MainScreen(viewModel: TodoViewModel) {
                         }
                     )
                 },
-                floatingActionButton = {
-                    // Floating action button for adding tasks
-                    FloatingActionButton(
-                        onClick = { showAddTaskDialog = true },
-                        containerColor = MaterialTheme.colorScheme.primary,
-                        contentColor = MaterialTheme.colorScheme.onPrimary
-                    ) {
-                        Icon(Icons.Default.Add, contentDescription = "Add Task")
-                    }
-                }
+                floatingActionButton = { }
             ) { paddingValues ->
                 // Main content
                 Column(
@@ -362,12 +353,32 @@ fun MainScreen(viewModel: TodoViewModel) {
                     
                     Spacer(modifier = Modifier.height(24.dp))
                     
-                    // Active Tasks section
-                    Text(
-                        text = "Active Tasks",
-                        style = MaterialTheme.typography.headlineMedium,
-                        fontWeight = FontWeight.Bold
-                    )
+                    // Active Tasks section with Add button
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Text(
+                            text = "Active Tasks",
+                            style = MaterialTheme.typography.headlineMedium,
+                            fontWeight = FontWeight.Bold
+                        )
+                        
+                        // Add task button
+                        Button(
+                            onClick = { showAddTaskDialog = true },
+                            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp)
+                        ) {
+                            Icon(
+                                Icons.Default.Add, 
+                                contentDescription = "Add Task",
+                                modifier = Modifier.size(18.dp)
+                            )
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text("Add Task")
+                        }
+                    }
                     
                     Spacer(modifier = Modifier.height(8.dp))
                     
@@ -391,7 +402,7 @@ fun MainScreen(viewModel: TodoViewModel) {
                                 )
                                 Spacer(modifier = Modifier.height(8.dp))
                                 Text(
-                                    text = "Tap the + button to add a new task",
+                                    text = "Tap the Add Task button to add a new task",
                                     style = MaterialTheme.typography.bodyMedium,
                                     color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
                                 )
