@@ -1,10 +1,10 @@
-# MCP - Vault Task Management
+# Personal Device Assistant (PDA)
 
 ## Overview
 
-MCP is a sophisticated personal digital assistant (PDA) application designed with a post-apocalyptic theme. The application offers comprehensive task management capabilities enhanced with immersive RPG elements to create an engaging productivity experience.
+The Personal Device Assistant (PDA) is a sophisticated task management application designed with a post-apocalyptic vault theme. It offers comprehensive productivity capabilities enhanced with immersive RPG elements to create an engaging user experience.
 
-The application helps users organize their daily activities while providing feedback through a unique NPC interaction system, transforming ordinary task completion into an adventure through a wasteland-inspired interface.
+The application helps survivors organize their daily activities while providing feedback through a unique NPC interaction system, transforming ordinary task completion into an adventure through a wasteland-inspired interface.
 
 ## Core Features
 
@@ -69,7 +69,7 @@ The project includes comprehensive documentation:
 ### Installation
 1. Clone the repository
    ```
-   git clone https://github.com/yourusername/mcp-vault-task-management.git
+   git clone https://github.com/yourusername/personal-device-assistant.git
    ```
 2. Open the project in Android Studio
 3. Sync Gradle files
