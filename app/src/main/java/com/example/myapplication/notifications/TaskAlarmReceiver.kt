@@ -34,7 +34,7 @@ class TaskAlarmReceiver : BroadcastReceiver() {
         val powerManager = context.getSystemService(Context.POWER_SERVICE) as PowerManager
         val wakeLock = powerManager.newWakeLock(
             PowerManager.PARTIAL_WAKE_LOCK,
-            "MetroPDA:TaskReminderWakeLock"
+            "PDAapp:TaskReminderWakeLock"
         )
         wakeLock.acquire(WAKELOCK_TIMEOUT)
         

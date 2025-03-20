@@ -36,7 +36,7 @@
 - [ ] Time tracking for tasks in progress
 - [x] Push notifications for task deadlines
 
-# Future Enhancements for Metro PDA App
+# Future Enhancements for PDA App
 
 ## Navigation & Layout
 - [ ] Navigation Drawer for additional options and settings
@@ -80,8 +80,15 @@
 - [ ] Category-based task filtering
 - [ ] Smart task sorting (by priority, due date, etc.)
 
+## Animation Improvements
+- [ ] Task Completion: Replace current confetti with thematic animations (green radiation particles)
+- [ ] NPC Messages: Add subtle animations when new messages arrive
+- [ ] Progress Indicators: Replace standard progress bars with animated, stylized PDA app-themed versions
+- [ ] Navigation Transitions: Make screen transitions feel like old terminal screens or mechanical movements
+- [ ] Category Icons: Add subtle animations to task category icons (pulsing effect for health tasks)
+
 ## Implementation Notes
-- Each feature should be implemented while maintaining the Metro theme
+- Each feature should be implemented while maintaining the PDA app theme
 - Consider performance impact for animations and visual effects
 - Ensure new features don't compromise the app's core functionality
 - Test thoroughly on different device sizes and orientations

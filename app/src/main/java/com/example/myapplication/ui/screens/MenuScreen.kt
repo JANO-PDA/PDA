@@ -72,7 +72,7 @@ fun MenuScreen(
                     Spacer(modifier = Modifier.height(8.dp))
                     
                     Text(
-                        text = "Metro PDA Menu",
+                        text = "PDA app Menu",
                         style = MaterialTheme.typography.headlineSmall,
                         fontWeight = FontWeight.Bold,
                         textAlign = TextAlign.Center
@@ -120,7 +120,7 @@ fun MenuScreen(
             MenuItemCard(
                 icon = Icons.Default.Forum,
                 title = "NPC Messages",
-                description = "View messages from NPCs in the Metro",
+                description = "View messages from NPCs in the PDA app",
                 badge = viewModel.getUnreadMessageCount(),
                 onClick = onNavigateToNpcMessages
             )
