@@ -1,11 +1,18 @@
 # PDA App - Recent Fixes
 
 ## Latest Update
-- **Removed task creation animation**: Eliminated the task creation animation completely for a cleaner, more direct user experience
-- **Reduced app complexity**: Simplified the task creation flow by removing unnecessary visual feedback
-- **Performance improvement**: Reduced UI overhead and state management complexity
+- **Implemented dark mode**: Added full support for system-based, light, and dark themes
+- **Enhanced theme customization**: Added dropdown menu for selecting theme preferences
+- **Fixed deprecated components**: Updated Divider components to HorizontalDivider
+- **Improved icon usage**: Replaced deprecated icons with auto-mirrored versions
 
 ## UI Enhancements
+
+### Dark Mode Implementation
+- **Theme toggle options**: Added system default, light, and dark mode options
+- **Persistent theme settings**: Implemented user preference storage for theme selection
+- **Optimized UI elements**: Updated all components to support both light and dark themes
+- **Dynamic color adaptation**: Enhanced color schemes for better contrast in dark mode
 
 ### Navigation and Menu System
 - **Fixed menu icon in drawer**: Removed the duplicate hamburger menu icon from the drawer header
@@ -13,25 +20,29 @@
 - **Fixed back button behavior**: Added proper back navigation handling in ContactsScreen to return to the main screen instead of exiting the app
 
 ### Animation System
-- **Removed task creation animations**: Eliminated all task creation animations for a more streamlined experience
-- **Reduced app size**: Removed animation files to decrease the app's download size
+- **Replaced animation libraries**: Migrated from external libraries to native Compose animations
+- **Simplified animation code**: Implemented cleaner animation patterns for better maintenance
+- **Improved performance**: Reduced overhead of animations with more optimized implementation
 - **Animation performance**: Optimized remaining animations to be less intrusive and more contextual
 
 ## Notification System
 - **Corrected notification timing**: Fixed issue that was causing notifications to be delivered earlier than scheduled
 - **Removed debug code**: Eliminated unnecessary testing code that was interfering with normal operation
 - **Improved error handling**: Enhanced error catching and logging in notification delivery process
+- **Added sound effects**: Implemented basic sound feedback for task completion
 
 ## Visual Consistency
 - **Updated icons**: Standardized icon usage across the application
 - **UI element alignment**: Improved consistency in spacing and alignment of UI components
 - **Animation transitions**: Smoother transitions between UI states
+- **Category icons**: Added pulsing animation effect for urgent task indicators
 
 ## Technical Improvements
 - **Removed animation libraries**: Eliminated external animation dependencies
 - **Optimized state management**: Improved how task creation states are tracked
 - **Updated deprecated code**: Fixed several instances of deprecated API usage in animations and UI components
 - **Reduced app dependencies**: Simplified the application by removing unnecessary features
+- **Enhanced theme system**: Implemented proper Material 3 theming with color scheme support
 
 ## Recent Updates
 
@@ -39,12 +50,14 @@
 - Improved task list item layout for better readability
 - Fixed touch target area for checkboxes on smaller devices
 - Added animation fade-out effect for completed tasks
-- Refined the task creation animation for better performance (removed JSON-based animations in favor of native Compose animations)
+- Refined animations for better performance (using native Compose animations)
+- Implemented category-specific card styling for better visual distinction
 
 ### Animation System
-- Replaced Lottie JSON animations with native Compose animations
+- Replaced external JSON animations with native Compose animations
 - Optimized animation loading and caching to reduce resource usage
-- Simplified animation logic to use a single task creation animation for consistency and maintainability
+- Simplified animation logic to maintain consistency and maintainability
+- Added subtle pulsing effects for urgent and overdue tasks
 
 ### Notification System
 - Fixed notification not appearing for tasks with exact due times
@@ -63,12 +76,12 @@
 - Optimized state management for smoother UI transitions
 - Reduced database queries through caching mechanism
 - Enhanced error handling with proper fallback behavior
-- Reduced app dependencies by removing Lottie animation library
+- Reduced app dependencies by focusing on native capabilities
 
 ## Next Planned Improvements
-- Implement dark mode support
 - Add custom notification sounds based on task priority
 - Optimize battery usage for background processes
 - Implement smoother transitions between screens
+- Add category-specific task templates for faster creation
 
-*Last Updated: June 2, 2024* 
+*Last Updated: June 5, 2024* 

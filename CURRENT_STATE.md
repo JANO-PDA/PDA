@@ -15,12 +15,14 @@ The PDA app is a task management application with a post-apocalyptic theme. It a
 - User profile with level progression
 - XP earned for completing tasks (10-100 XP based on difficulty)
 - Category-based statistics tracking completion rates
+- Category rank system with thematic level names
 
 ### Notification System
 - Precise time-based notifications delivered at exact due times
 - Uses Android's AlarmManager with wake locks to ensure delivery
 - Notification styling based on task category
 - Permission handling for Android 13+ notification requirements
+- Sound effects for task interactions
 
 ### NPC Interaction
 - NPCs provide themed feedback messages for task completion/failure
@@ -35,6 +37,7 @@ The PDA app is a task management application with a post-apocalyptic theme. It a
   - NPC message inbox
 - Theme customization options
 - Subtle task creation animation to provide visual feedback
+- Full dark mode support (system default, light, and dark options)
 
 ## Technical Implementation
 
@@ -43,7 +46,7 @@ The PDA app is a task management application with a post-apocalyptic theme. It a
 - UI constructed with Jetpack Compose
 - State management through StateFlow 
 - Repository pattern for data management
-- Lottie for animations
+- Native Compose animations for visual feedback
 
 ### Key Classes
 - `TodoViewModel`: Central coordinator for app functionality
@@ -57,6 +60,7 @@ The PDA app is a task management application with a post-apocalyptic theme. It a
 - `UserProfile`: Tracks user progress and preferences
 - `NpcMessage`: Stores communication from NPCs
 - `TaskCategory` and `TaskDifficulty`: Enumeration types
+- `CategoryRank`: Provides thematic progression system
 
 ## Current Limitations
 - Simple animation system with a single animation style for all tasks
@@ -69,10 +73,11 @@ The PDA app is a task management application with a post-apocalyptic theme. It a
 - Error handling and logging implemented throughout
 - Battery usage considerations for background processes
 - Animations are lightweight and non-blocking
+- Dark mode implementation reduces power usage on OLED screens
 
 ## Documentation
 - **FEATURES.md**: Contains the feature roadmap and implementation status
 - **RECENT_FIXES.md**: Tracks the latest bug fixes and improvements
-- **CODE_STRUCTURE.md**: Documentation on code organization (planned)
+- **FUTURE.md**: Documents future development plans and architectural decisions
 
-*Last Updated: May 26, 2024* 
+*Last Updated: June 5, 2024* 

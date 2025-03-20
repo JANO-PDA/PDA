@@ -12,6 +12,7 @@
 - [x] Due dates and notifications for tasks
 - [x] Task completion rates per category
 - [x] Subtasks for complex goals
+- [x] Dark mode implementation (system, light, dark options)
 
 ## Planned - Phase 3
 - [ ] Different PDA skins (STALKER, Fallout Pip-Boy, Cyberpunk)
@@ -46,10 +47,10 @@
 - [ ] Pull-to-refresh functionality
 
 ## Visual Feedback & Animations
-- [ ] Task completion celebration animations (confetti, particle effects)
+- [x] Task completion celebration animations (simple native animations)
 - [ ] Smooth transitions when expanding/collapsing subtasks
-- [ ] Pulsating effects for urgent tasks
-- [ ] Progress indicators for task completion within categories
+- [x] Pulsating effects for urgent tasks
+- [x] Progress indicators for task completion within categories
 - [ ] Animated task priority indicators
 
 ## Task Management Features
@@ -60,11 +61,11 @@
 - [ ] Quick task creation with voice input
 
 ## Visual Enhancements
-- [ ] Custom task card designs based on category
-- [ ] Dynamic color themes based on task priority or category
+- [x] Custom task card designs based on category
+- [x] Dynamic color themes based on task priority or category
 - [ ] Progress rings around task items showing time remaining
 - [ ] Visual timeline view for upcoming tasks
-- [ ] Custom icons for different task types
+- [x] Custom icons for different task types
 
 ## Interaction Improvements
 - [ ] Long-press actions for quick task operations
@@ -77,15 +78,15 @@
 - [ ] Calendar view integration
 - [ ] Kanban board view option
 - [ ] Timeline view for task progression
-- [ ] Category-based task filtering
-- [ ] Smart task sorting (by priority, due date, etc.)
+- [x] Category-based task filtering
+- [x] Smart task sorting (by priority, due date, etc.)
 
 ## Animation Improvements
-- [ ] Task Completion: Replace current confetti with thematic animations (green radiation particles)
+- [x] Task Completion: Simple native animations instead of confetti
 - [ ] NPC Messages: Add subtle animations when new messages arrive
-- [ ] Progress Indicators: Replace standard progress bars with animated, stylized PDA app-themed versions
-- [ ] Navigation Transitions: Make screen transitions feel like old terminal screens or mechanical movements
-- [ ] Category Icons: Add subtle animations to task category icons (pulsing effect for health tasks)
+- [x] Progress Indicators: Animated, stylized progress bars for categories
+- [ ] Navigation Transitions: Screen transitions with themed effects
+- [x] Category Icons: Subtle animations for task category icons (pulsing for urgent tasks)
 
 ## Implementation Notes
 - Each feature should be implemented while maintaining the PDA app theme
