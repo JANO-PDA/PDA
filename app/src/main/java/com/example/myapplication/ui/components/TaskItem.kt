@@ -41,7 +41,9 @@ fun TaskItem(
     onAddSubtask: ((Task) -> Unit)? = null,
     onCompleteSubtask: ((Task) -> Unit)? = null,
     level: Int = 0, // Indentation level for subtasks
-    isHighlighted: Boolean = false
+    isHighlighted: Boolean = false,
+    isNewlyCreated: Boolean = false,
+    onAnimationFinished: (() -> Unit)? = null
 ) {
     var isCompleting by remember { mutableStateOf(false) }
     var isExpanded by remember { mutableStateOf(isHighlighted) } // Auto-expand if highlighted
@@ -160,6 +162,14 @@ fun TaskItem(
                     .fillMaxWidth()
                     .padding(16.dp),
             ) {
+                // Show creation animation for newly created tasks
+                if (isNewlyCreated) {
+                    TaskCreatedAnimation(
+                        isVisible = true,
+                        onAnimationFinished = { onAnimationFinished?.invoke() }
+                    )
+                }
+                
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,

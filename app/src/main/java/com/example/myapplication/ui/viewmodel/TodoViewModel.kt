@@ -30,6 +30,7 @@ import java.time.Instant
 import java.time.Duration
 import com.example.myapplication.data.TaskStorage
 import android.os.Build
+import java.util.UUID
 
 class TodoViewModel : ViewModel() {
     private val _tasks = MutableStateFlow<List<Task>>(emptyList())
@@ -64,6 +65,14 @@ class TodoViewModel : ViewModel() {
     // Track confetti position (to center on completed task)
     private val _confettiPosition = MutableStateFlow(Pair(0f, 0f))
     val confettiPosition: StateFlow<Pair<Float, Float>> = _confettiPosition.asStateFlow()
+    
+    // State for showing task created animation
+    private val _showTaskCreatedAnimation = MutableStateFlow(false)
+    val showTaskCreatedAnimation: StateFlow<Boolean> = _showTaskCreatedAnimation.asStateFlow()
+    
+    // Track the most recently created task ID
+    private val _lastCreatedTaskId = MutableStateFlow<String?>(null)
+    val lastCreatedTaskId: StateFlow<String?> = _lastCreatedTaskId.asStateFlow()
     
     // Application context for playing sounds
     private var appContext: Context? = null
@@ -219,6 +228,10 @@ class TodoViewModel : ViewModel() {
         
         // Update category stats
         updateCategoryStats()
+        
+        // Set the last created task ID and show animation
+        _lastCreatedTaskId.value = newTask.id
+        _showTaskCreatedAnimation.value = true
     }
     
     fun addSubtask(
@@ -673,6 +686,12 @@ class TodoViewModel : ViewModel() {
 
     fun updateUserProfile(updatedProfile: UserProfile) {
         _userProfile.value = updatedProfile
+    }
+
+    // Function to hide the task created animation
+    fun hideTaskCreatedAnimation() {
+        _showTaskCreatedAnimation.value = false
+        _lastCreatedTaskId.value = null
     }
 
     init {

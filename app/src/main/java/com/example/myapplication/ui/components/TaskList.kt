@@ -42,6 +42,10 @@ fun TaskList(
 ) {
     var selectedParentTask by remember { mutableStateOf<Task?>(null) }
     
+    // Get last created task ID for animation
+    val showTaskCreatedAnimation by viewModel?.showTaskCreatedAnimation?.collectAsState() ?: remember { mutableStateOf(false) }
+    val lastCreatedTaskId by viewModel?.lastCreatedTaskId?.collectAsState() ?: remember { mutableStateOf<String?>(null) }
+    
     LazyColumn(
         modifier = modifier.fillMaxWidth(),
         verticalArrangement = Arrangement.spacedBy(8.dp)
@@ -52,6 +56,9 @@ fun TaskList(
             val highlightedTaskId = viewModel?.highlightedTaskId?.collectAsState()?.value
             val isHighlighted = task.id == highlightedTaskId
             
+            // Check if this is the newly created task
+            val isNewlyCreated = showTaskCreatedAnimation && task.id == lastCreatedTaskId
+            
             TaskItem(
                 task = task,
                 onComplete = { onTaskComplete(task) },
@@ -61,7 +68,13 @@ fun TaskList(
                 onCompleteSubtask = { subtask -> 
                     viewModel?.completeTask(subtask)
                 },
-                isHighlighted = isHighlighted
+                isHighlighted = isHighlighted,
+                isNewlyCreated = isNewlyCreated,
+                onAnimationFinished = {
+                    if (isNewlyCreated && viewModel != null) {
+                        viewModel.hideTaskCreatedAnimation()
+                    }
+                }
             )
         }
         

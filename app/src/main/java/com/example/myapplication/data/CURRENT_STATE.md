@@ -34,6 +34,7 @@ The PDA app is a task management application with a post-apocalyptic theme. It a
   - Category statistics and progress
   - NPC message inbox
 - Theme customization options
+- Task creation animations and visual feedback for user actions
 
 ## Technical Implementation
 
@@ -42,6 +43,7 @@ The PDA app is a task management application with a post-apocalyptic theme. It a
 - UI constructed with Jetpack Compose
 - State management through StateFlow 
 - Repository pattern for data management
+- Lottie for high-quality animations
 
 ### Key Classes
 - `TodoViewModel`: Central coordinator for app functionality
@@ -67,10 +69,9 @@ The PDA app is a task management application with a post-apocalyptic theme. It a
 - Error handling and logging implemented throughout
 - Battery usage considerations for background processes
 
-## Recent Fixes
-- Corrected notification timing issue that was causing early delivery
-- Removed unnecessary debug code and UI elements
-- Improved error handling in notification delivery
-- Enhanced UI consistency with icon updates
+## Documentation
+- **FEATURES.md**: Contains the feature roadmap and implementation status
+- **RECENT_FIXES.md**: Tracks the latest bug fixes and improvements
+- **CODE_STRUCTURE.md**: Documentation on code organization (planned)
 
-*Last Updated: [Current Date]* 
+*Last Updated: May 26, 2024* 

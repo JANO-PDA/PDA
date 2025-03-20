@@ -33,6 +33,7 @@ import kotlinx.coroutines.launch
 import com.example.myapplication.ui.components.AnimatedBackground
 import com.example.myapplication.ui.components.FloatingElement
 import com.example.myapplication.ui.components.PulsatingIcon
+import com.example.myapplication.ui.components.TaskCreatedAnimation
 import kotlin.random.Random
 import java.util.Date
 import kotlin.comparisons.compareByDescending
@@ -53,6 +54,7 @@ fun MainScreen(viewModel: TodoViewModel) {
     // Get state
     val showConfetti by viewModel.showConfetti.collectAsState()
     val npcMessages by viewModel.npcMessages.collectAsState()
+    val showTaskCreatedAnimation by viewModel.showTaskCreatedAnimation.collectAsState()
     
     // States
     val addSubtaskFor by viewModel.addSubtaskFor.collectAsState()
@@ -61,6 +63,9 @@ fun MainScreen(viewModel: TodoViewModel) {
     // Drawer state
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     val scope = rememberCoroutineScope()
+    
+    // Track drawer state for UI updates
+    val isDrawerOpen = remember { derivedStateOf { drawerState.currentValue == DrawerValue.Open } }
     
     // Update dialog state
     LaunchedEffect(addSubtaskFor) {
@@ -112,15 +117,6 @@ fun MainScreen(viewModel: TodoViewModel) {
                         .padding(horizontal = 16.dp, vertical = 8.dp),
                     horizontalAlignment = Alignment.Start
                 ) {
-                    Icon(
-                        imageVector = Icons.Default.Menu,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.size(48.dp)
-                    )
-                    
-                    Spacer(modifier = Modifier.height(8.dp))
-                    
                     Text(
                         text = "PDA Menu",
                         style = MaterialTheme.typography.headlineSmall,
@@ -166,234 +162,249 @@ fun MainScreen(viewModel: TodoViewModel) {
         }
     ) {
         // Main content
-        Scaffold(
-            topBar = {
-                // Top bar with simple title
-                TopAppBar(
-                    title = { Text("Tasks") },
-                    colors = TopAppBarDefaults.topAppBarColors(
-                        containerColor = MaterialTheme.colorScheme.surface,
-                        titleContentColor = MaterialTheme.colorScheme.onSurface
-                    ),
-                    navigationIcon = {
-                        IconButton(onClick = { scope.launch { drawerState.open() } }) {
-                            Icon(Icons.Default.Menu, contentDescription = "Menu")
-                        }
-                    },
-                    actions = {
-                        // Message icon with badge
-                        IconButton(onClick = { showContactsScreen = true }) {
-                            BadgedBox(
-                                badge = {
-                                    if (viewModel.getUnreadMessageCount() > 0) {
-                                        Badge { Text(viewModel.getUnreadMessageCount().toString()) }
-                                    }
+        Box(modifier = Modifier.fillMaxSize()) {
+            Scaffold(
+                topBar = {
+                    // Top bar with simple title
+                    TopAppBar(
+                        title = { Text("Tasks") },
+                        colors = TopAppBarDefaults.topAppBarColors(
+                            containerColor = MaterialTheme.colorScheme.surface,
+                            titleContentColor = MaterialTheme.colorScheme.onSurface
+                        ),
+                        navigationIcon = {
+                            // Only show menu icon when drawer is closed
+                            if (!isDrawerOpen.value) {
+                                IconButton(onClick = { scope.launch { drawerState.open() } }) {
+                                    Icon(Icons.Default.Menu, contentDescription = "Menu")
                                 }
-                            ) {
-                                Icon(Icons.AutoMirrored.Filled.Message, contentDescription = "Messages")
+                            }
+                        },
+                        actions = {
+                            // Message icon with badge
+                            IconButton(onClick = { showContactsScreen = true }) {
+                                BadgedBox(
+                                    badge = {
+                                        if (viewModel.getUnreadMessageCount() > 0) {
+                                            Badge { Text(viewModel.getUnreadMessageCount().toString()) }
+                                        }
+                                    }
+                                ) {
+                                    Icon(Icons.AutoMirrored.Filled.Message, contentDescription = "Messages")
+                                }
                             }
                         }
-                    }
-                )
-            },
-            floatingActionButton = {
-                // Floating action button for adding tasks
-                FloatingActionButton(
-                    onClick = { showAddTaskDialog = true },
-                    containerColor = MaterialTheme.colorScheme.primary,
-                    contentColor = MaterialTheme.colorScheme.onPrimary
-                ) {
-                    Icon(Icons.Default.Add, contentDescription = "Add Task")
-                }
-            }
-        ) { paddingValues ->
-            // Main content
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(paddingValues)
-                    .padding(horizontal = 16.dp)
-            ) {
-                Spacer(modifier = Modifier.height(16.dp))
-                
-                // User Profile Card
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.surfaceVariant,
-                        contentColor = MaterialTheme.colorScheme.onSurfaceVariant
                     )
-                ) {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(16.dp)
+                },
+                floatingActionButton = {
+                    // Floating action button for adding tasks
+                    FloatingActionButton(
+                        onClick = { showAddTaskDialog = true },
+                        containerColor = MaterialTheme.colorScheme.primary,
+                        contentColor = MaterialTheme.colorScheme.onPrimary
                     ) {
-                        // Header with icon
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Star,
-                                contentDescription = "User Profile",
-                                tint = MaterialTheme.colorScheme.primary,
-                                modifier = Modifier.requiredSize(24.dp)
-                            )
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text(
-                                text = "User Profile",
-                                style = MaterialTheme.typography.titleLarge
-                            )
-                        }
-                        
-                        Spacer(modifier = Modifier.height(16.dp))
-                        
-                        // Level and XP
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween
-                        ) {
-                            Text(
-                                text = "Level:",
-                                style = MaterialTheme.typography.bodyLarge
-                            )
-                            Text(
-                                text = userProfile.level.toString(),
-                                style = MaterialTheme.typography.bodyLarge,
-                                fontWeight = FontWeight.Bold
-                            )
-                        }
-                        
-                        Spacer(modifier = Modifier.height(8.dp))
-                        
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween
-                        ) {
-                            Text(
-                                text = "Total XP:",
-                                style = MaterialTheme.typography.bodyLarge
-                            )
-                            Text(
-                                text = userProfile.totalXp.toString(),
-                                style = MaterialTheme.typography.bodyLarge,
-                                fontWeight = FontWeight.Bold
-                            )
-                        }
-                        
-                        Spacer(modifier = Modifier.height(16.dp))
-                        
-                        // XP Progress section
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Star,
-                                contentDescription = "XP Progress",
-                                tint = MaterialTheme.colorScheme.primary,
-                                modifier = Modifier.requiredSize(24.dp)
-                            )
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text(
-                                text = "XP Progress",
-                                style = MaterialTheme.typography.titleMedium
-                            )
-                        }
-                        
-                        Spacer(modifier = Modifier.height(8.dp))
-                        
-                        // Progress bar
-                        val progress = calculateProgressToNextLevel(userProfile.totalXp)
-                        val xpForNextLevel = calculateXpForNextLevel(userProfile.totalXp)
-                        val xpNeeded = xpForNextLevel - userProfile.totalXp
-                        
-                        LinearProgressIndicator(
-                            progress = { progress },
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(8.dp),
-                            color = MaterialTheme.colorScheme.primary,
-                            trackColor = MaterialTheme.colorScheme.primaryContainer
-                        )
-                        
-                        Spacer(modifier = Modifier.height(8.dp))
-                        
-                        // XP to next level
-                        Text(
-                            text = "$xpNeeded XP to Level ${userProfile.level + 1}",
-                            style = MaterialTheme.typography.titleLarge,
-                            color = MaterialTheme.colorScheme.primary,
-                            fontWeight = FontWeight.Bold,
-                            modifier = Modifier.align(Alignment.CenterHorizontally)
-                        )
-                        
-                        Spacer(modifier = Modifier.height(4.dp))
-                        
-                        Text(
-                            text = "XP to next level: $xpNeeded",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.align(Alignment.CenterHorizontally)
-                        )
+                        Icon(Icons.Default.Add, contentDescription = "Add Task")
                     }
                 }
-                
-                Spacer(modifier = Modifier.height(24.dp))
-                
-                // Active Tasks section
-                Text(
-                    text = "Active Tasks",
-                    style = MaterialTheme.typography.headlineMedium,
-                    fontWeight = FontWeight.Bold
-                )
-                
-                Spacer(modifier = Modifier.height(8.dp))
-                
-                // Task list
-                if (topLevelActiveTasks.isEmpty()) {
-                    // Empty state
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .weight(1f),
-                        contentAlignment = Alignment.Center
+            ) { paddingValues ->
+                // Main content
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(paddingValues)
+                        .padding(horizontal = 16.dp)
+                ) {
+                    Spacer(modifier = Modifier.height(16.dp))
+                    
+                    // User Profile Card
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = CardDefaults.cardColors(
+                            containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                            contentColor = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
                     ) {
                         Column(
-                            horizontalAlignment = Alignment.CenterHorizontally,
-                            verticalArrangement = Arrangement.Center
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(16.dp)
                         ) {
-                            Text(
-                                text = "No active tasks",
-                                style = MaterialTheme.typography.titleMedium,
-                                color = MaterialTheme.colorScheme.onSurface
-                            )
+                            // Header with icon
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Star,
+                                    contentDescription = "User Profile",
+                                    tint = MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier.requiredSize(24.dp)
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(
+                                    text = "User Profile",
+                                    style = MaterialTheme.typography.titleLarge
+                                )
+                            }
+                            
+                            Spacer(modifier = Modifier.height(16.dp))
+                            
+                            // Level and XP
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween
+                            ) {
+                                Text(
+                                    text = "Level:",
+                                    style = MaterialTheme.typography.bodyLarge
+                                )
+                                Text(
+                                    text = userProfile.level.toString(),
+                                    style = MaterialTheme.typography.bodyLarge,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
+                            
                             Spacer(modifier = Modifier.height(8.dp))
+                            
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween
+                            ) {
+                                Text(
+                                    text = "Total XP:",
+                                    style = MaterialTheme.typography.bodyLarge
+                                )
+                                Text(
+                                    text = userProfile.totalXp.toString(),
+                                    style = MaterialTheme.typography.bodyLarge,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
+                            
+                            Spacer(modifier = Modifier.height(16.dp))
+                            
+                            // XP Progress section
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Star,
+                                    contentDescription = "XP Progress",
+                                    tint = MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier.requiredSize(24.dp)
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(
+                                    text = "XP Progress",
+                                    style = MaterialTheme.typography.titleMedium
+                                )
+                            }
+                            
+                            Spacer(modifier = Modifier.height(8.dp))
+                            
+                            // Progress bar
+                            val progress = calculateProgressToNextLevel(userProfile.totalXp)
+                            val xpForNextLevel = calculateXpForNextLevel(userProfile.totalXp)
+                            val xpNeeded = xpForNextLevel - userProfile.totalXp
+                            
+                            LinearProgressIndicator(
+                                progress = { progress },
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(8.dp),
+                                color = MaterialTheme.colorScheme.primary,
+                                trackColor = MaterialTheme.colorScheme.primaryContainer
+                            )
+                            
+                            Spacer(modifier = Modifier.height(8.dp))
+                            
+                            // XP to next level
                             Text(
-                                text = "Tap the + button to add a new task",
+                                text = "$xpNeeded XP to Level ${userProfile.level + 1}",
+                                style = MaterialTheme.typography.titleLarge,
+                                color = MaterialTheme.colorScheme.primary,
+                                fontWeight = FontWeight.Bold,
+                                modifier = Modifier.align(Alignment.CenterHorizontally)
+                            )
+                            
+                            Spacer(modifier = Modifier.height(4.dp))
+                            
+                            Text(
+                                text = "XP to next level: $xpNeeded",
                                 style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+                                color = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.align(Alignment.CenterHorizontally)
                             )
                         }
                     }
-                } else {
-                    // Task list with tasks
-                    TaskList(
-                        tasks = topLevelActiveTasks,
-                        subtaskMap = subtaskMap,
-                        onTaskClick = { task ->
-                            viewModel.highlightTask(task.id)
-                        },
-                        onTaskComplete = { task ->
-                            viewModel.completeTask(task)
-                        },
-                        onAddSubtask = { task ->
-                            viewModel.setAddSubtaskFor(task)
-                        },
-                        viewModel = viewModel
+                    
+                    Spacer(modifier = Modifier.height(24.dp))
+                    
+                    // Active Tasks section
+                    Text(
+                        text = "Active Tasks",
+                        style = MaterialTheme.typography.headlineMedium,
+                        fontWeight = FontWeight.Bold
                     )
+                    
+                    Spacer(modifier = Modifier.height(8.dp))
+                    
+                    // Task list
+                    if (topLevelActiveTasks.isEmpty()) {
+                        // Empty state
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .weight(1f),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Column(
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                verticalArrangement = Arrangement.Center
+                            ) {
+                                Text(
+                                    text = "No active tasks",
+                                    style = MaterialTheme.typography.titleMedium,
+                                    color = MaterialTheme.colorScheme.onSurface
+                                )
+                                Spacer(modifier = Modifier.height(8.dp))
+                                Text(
+                                    text = "Tap the + button to add a new task",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+                                )
+                            }
+                        }
+                    } else {
+                        // Task list with tasks
+                        TaskList(
+                            tasks = topLevelActiveTasks,
+                            subtaskMap = subtaskMap,
+                            onTaskClick = { task ->
+                                viewModel.highlightTask(task.id)
+                            },
+                            onTaskComplete = { task ->
+                                viewModel.completeTask(task)
+                            },
+                            onAddSubtask = { task ->
+                                viewModel.setAddSubtaskFor(task)
+                            },
+                            viewModel = viewModel
+                        )
+                    }
                 }
+            }
+            
+            // Show confetti animation if needed
+            if (showConfetti) {
+                val confettiPosition by viewModel.confettiPosition.collectAsState()
+                ConfettiAnimation(
+                    numConfetti = 100,
+                    durationMillis = 2000,
+                    onAnimationEnd = {}
+                )
             }
         }
     }

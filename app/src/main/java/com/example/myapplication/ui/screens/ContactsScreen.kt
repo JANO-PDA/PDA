@@ -25,6 +25,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
+import androidx.activity.compose.BackHandler
 import com.example.myapplication.data.models.NpcMessage
 import com.example.myapplication.ui.components.NpcMessageItem
 import com.example.myapplication.ui.viewmodel.TodoViewModel
@@ -51,6 +52,11 @@ fun ContactsScreen(
     // For showing the snackbar
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
+    
+    // Handle system back button press
+    BackHandler {
+        onNavigateBack()
+    }
     
     // Auto mark all messages as read when screen is shown
     LaunchedEffect(Unit) {
