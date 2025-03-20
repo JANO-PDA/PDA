@@ -29,4 +29,41 @@ This document tracks the recent improvements and bug fixes implemented in the PD
 - **Optimized state management**: Improved how task creation and animation states are tracked
 - **Updated deprecated code**: Fixed several instances of deprecated API usage in animations and UI components
 
-*Last Updated: May 26, 2024* 
+## Recent Updates
+
+### UI Enhancements
+- Improved task list item layout for better readability
+- Fixed touch target area for checkboxes on smaller devices
+- Added animation fade-out effect for completed tasks
+- Refined the task creation animation for better performance (reverted category-specific animations to use a single consistent animation)
+
+### Animation System
+- Integrated Lottie animation library for smooth, lightweight animations
+- Optimized animation loading and caching to reduce resource usage
+- Simplified animation logic to use a single task creation animation for consistency and maintainability
+
+### Notification System
+- Fixed notification not appearing for tasks with exact due times
+- Corrected notification permission handling for Android 13+
+- Added notification channel grouping for better organization
+- Implemented reliable wake-lock handling for precise alarm timing
+
+### Visual Consistency
+- Applied consistent color schemes across all screens
+- Updated typography to improve readability
+- Standardized spacing and layout metrics
+- Consolidated animation style to maintain UI consistency
+
+### Technical Improvements
+- Improved ViewModel scoping to prevent memory leaks
+- Optimized state management for smoother UI transitions
+- Reduced database queries through caching mechanism
+- Enhanced error handling with proper fallback behavior
+
+## Next Planned Improvements
+- Implement dark mode support
+- Add custom notification sounds based on task priority
+- Optimize battery usage for background processes
+- Implement smoother transitions between screens
+
+*Last Updated: June 2, 2024* 

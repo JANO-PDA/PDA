@@ -20,7 +20,7 @@ import com.example.myapplication.R
 import kotlinx.coroutines.delay
 
 /**
- * A simplified task creation animation that shows a subtle checkmark animation
+ * A simplified task creation animation that shows a subtle animation
  * to indicate a task has been created. This is designed to be used inside
  * a task item rather than as a full-screen overlay.
  */
