@@ -1,0 +1,35 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "Build Debug APK",
+      "runtimeExecutable": "gradlew",
+      "runtimeArgs": ["assembleDebug"]
+    },
+    {
+      "name": "Install Debug on Device",
+      "runtimeExecutable": "gradlew",
+      "runtimeArgs": ["installDebug"]
+    },
+    {
+      "name": "Build & Install Debug",
+      "runtimeExecutable": "gradlew",
+      "runtimeArgs": ["assembleDebug", "installDebug"]
+    },
+    {
+      "name": "Run Unit Tests",
+      "runtimeExecutable": "gradlew",
+      "runtimeArgs": ["testDebugUnitTest"]
+    },
+    {
+      "name": "Clean",
+      "runtimeExecutable": "gradlew",
+      "runtimeArgs": ["clean"]
+    },
+    {
+      "name": "Full Build",
+      "runtimeExecutable": "gradlew",
+      "runtimeArgs": ["build"]
+    }
+  ]
+}
