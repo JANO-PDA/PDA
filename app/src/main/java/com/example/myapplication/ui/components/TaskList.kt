@@ -37,6 +37,7 @@ fun TaskList(
     onTaskClick: (Task) -> Unit,
     onTaskComplete: (Task) -> Unit,
     onAddSubtask: (Task) -> Unit,
+    onTaskEdit: ((Task) -> Unit)? = null,  // Fix 9: edit callback
     viewModel: TodoViewModel? = null,
     modifier: Modifier = Modifier
 ) {
@@ -62,9 +63,10 @@ fun TaskList(
                 onDelete = { viewModel?.deleteTask(task) },
                 subtasks = taskSubtasks.filter { !it.isCompleted },
                 onAddSubtask = { selectedParentTask = it },
-                onCompleteSubtask = { subtask -> 
+                onCompleteSubtask = { subtask ->
                     viewModel?.completeTask(subtask)
                 },
+                onEdit = if (onTaskEdit != null) { { onTaskEdit(task) } } else null,
                 isHighlighted = isHighlighted,
                 modifier = Modifier.padding(vertical = 8.dp)
             )

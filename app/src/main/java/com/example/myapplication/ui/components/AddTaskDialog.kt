@@ -15,6 +15,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import com.example.myapplication.data.models.Task
 import com.example.myapplication.data.models.TaskCategory
 import com.example.myapplication.data.models.TaskDifficulty
 import com.example.myapplication.ui.theme.AppIcons
@@ -28,18 +29,20 @@ import java.time.format.DateTimeFormatter
 @Composable
 fun AddTaskDialog(
     onDismiss: () -> Unit,
-    onAddTask: (String, String, TaskDifficulty, TaskCategory, LocalDate?, LocalTime?, Boolean) -> Unit
+    onAddTask: (String, String, TaskDifficulty, TaskCategory, LocalDate?, LocalTime?, Boolean) -> Unit,
+    existingTask: Task? = null  // Fix 9: pre-fill from existing task when editing
 ) {
-    var title by remember { mutableStateOf("") }
-    var description by remember { mutableStateOf("") }
-    var selectedDifficulty by remember { mutableStateOf(TaskDifficulty.MEDIUM) }
-    var selectedCategory by remember { mutableStateOf(TaskCategory.PERSONAL) }
-    var hasDueDate by remember { mutableStateOf(false) }
-    
-    // Default due date: tomorrow
-    var selectedDate by remember { mutableStateOf(LocalDate.now().plusDays(1)) }
-    var selectedTime by remember { mutableStateOf(LocalTime.of(9, 0)) } // Default 9:00 AM
-    var hasReminder by remember { mutableStateOf(false) }
+    val isEditMode = existingTask != null
+
+    var title by remember { mutableStateOf(existingTask?.title ?: "") }
+    var description by remember { mutableStateOf(existingTask?.description ?: "") }
+    var selectedDifficulty by remember { mutableStateOf(existingTask?.difficulty ?: TaskDifficulty.MEDIUM) }
+    var selectedCategory by remember { mutableStateOf(existingTask?.category ?: TaskCategory.PERSONAL) }
+    var hasDueDate by remember { mutableStateOf(existingTask?.dueDate != null) }
+
+    var selectedDate by remember { mutableStateOf(existingTask?.dueDate ?: LocalDate.now().plusDays(1)) }
+    var selectedTime by remember { mutableStateOf(existingTask?.dueTime ?: LocalTime.of(9, 0)) }
+    var hasReminder by remember { mutableStateOf(existingTask?.hasReminder ?: false) }
     
     // Dialog states
     var showDatePicker by remember { mutableStateOf(false) }
@@ -51,7 +54,7 @@ fun AddTaskDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Add New Task") },
+        title = { Text(if (isEditMode) "Edit Task" else "Add New Task") },
         text = {
             Column(
                 modifier = Modifier
@@ -391,7 +394,7 @@ fun AddTaskDialog(
                 },
                 enabled = title.isNotBlank()
             ) {
-                Text("Add")
+                Text(if (isEditMode) "Save" else "Add")
             }
         },
         dismissButton = {
