@@ -1,106 +1,111 @@
-# PDA App - Current State Documentation
+# PDA App — Current State (Verified Against Source Code)
 
-## Overview
-The PDA app is a task management application with a post-apocalyptic theme. It allows users to create, organize, and complete tasks while earning XP and receiving feedback through an NPC message system.
+*Last Audited: 2026-03-28 — based on actual source code, not prior docs*
 
-## Core Components
+---
 
-### Task Management
-- Tasks can be created with titles, descriptions, categories, and difficulty levels
-- Tasks support due dates and times for scheduling
-- Subtask functionality allows complex task breakdown
-- Tasks can be marked as complete, earning XP based on difficulty
-- Add task button repositioned next to "Active Tasks" header for better UX
+## What Actually Works
 
-### User System
-- User profile with level progression
-- XP earned for completing tasks (10-100 XP based on difficulty)
-- Category-based statistics tracking completion rates
-- Category rank system with thematic level names
+### Task Management ✅
+- Create / read / update / delete tasks
+- Title, description, difficulty (EASY/MEDIUM/HARD/NIGHTMARE), category (6 types)
+- Due date + time picker
+- Subtasks (add, complete, display nested)
+- Task editing — AddTaskDialog accepts `existingTask` for pre-fill
+- Category filter chips + sort (Default / Due Date / Difficulty)
+- Overdue detection (checked every 60 seconds in MainActivity)
 
-### Notification System
-- Precise time-based notifications delivered at exact due times
-- Uses Android's AlarmManager with wake locks to ensure delivery
-- Notification styling based on task category
-- Permission handling for Android 13+ notification requirements
-- Sound effects for task interactions
+### User Profile & XP ✅
+- XP awarded on task completion: EASY=10, MEDIUM=25, HARD=50, NIGHTMARE=100
+- Subtasks award XP correctly
+- Level progression with 20% exponential XP curve per level
+- Streak tracking (consecutive-day completion)
+- Profile persists across app restarts (SharedPreferences + Gson)
 
-### NPC Interaction
-- NPCs provide themed feedback messages for task completion/failure
-- Messages are category-specific with NPCs assigned to different areas
-- Unread message tracking with badge indicators
-- Expanded dialogue options for more varied NPC interactions
-- Shopping category NPCs (Grifter and Viktor "The Mule") received additional dialogue lines
+### NPC System ✅
+- 12 NPCs across 6 categories (2 per category), rich post-apocalyptic dialogue
+- Completion and failure messages generated and shown in ContactsScreen
+- Unread message badge in TopBar
+- Auto-marks messages read when ContactsScreen opens
+- Message detail dialog
 
-### UI Structure
-- Main screen displays active tasks with completion controls
-- Menu navigation to specialized screens:
-  - Completed tasks archive
-  - Category statistics and progress
-  - NPC message inbox
-- Theme customization options
-- Full dark mode support (system default, light, and dark options)
-- Refined animation system using native Compose animations
+### Notifications ✅ (with permissions)
+- AlarmManager + setExactAndAllowWhileIdle for task reminders
+- NotificationHelper creates channels and shows styled notifications
+- Permission handling for POST_NOTIFICATIONS (Android 13+) and SCHEDULE_EXACT_ALARM (Android 12+)
+- TaskAlarmReceiver handles wake locks correctly
 
-## Technical Implementation
+### Theme & Dark Mode ✅
+- 3 themes: ZONE_EXPLORER (green), RADIATION (orange), PRIPYAT (blue)
+- Each has separate light + dark color schemes
+- Dark/Light/System mode toggle
+- All persisted in UserProfile
 
-### Core Architecture
-- Built with Kotlin for Android
-- UI constructed with Jetpack Compose
-- State management through StateFlow 
-- Repository pattern for data management
-- Native Compose animations for visual feedback
+### Navigation ✅
+- ModalNavigationDrawer with Completed Tasks, Category Statistics, Settings
+- TopBar message icon with unread badge → ContactsScreen
+- All screens have proper BackHandler
 
-### Key Classes
-- `TodoViewModel`: Central coordinator for app functionality
-- `AlarmScheduler`: Manages notification timing and delivery
-- `NotificationHelper`: Creates and styles notifications
-- `TaskAlarmReceiver`: Handles alarm broadcasts
-- `NpcRepository`: Manages NPC message generation and storage
+### Animations (Native Compose) ✅
+- Task card scale + alpha on complete, highlighted, overdue states
+- AnimatedVisibility expand/collapse for subtasks and action buttons
+- Confetti (custom Canvas, works but basic)
+- AnimatedBackground (gradient, minor coordinate bug)
+- FloatingElement (vertical float on UserProfileCard)
+- PulsatingIcon (overdue warning)
+- AnimatedContent for XP/Level changes in profile
 
-### Data Models
-- `Task`: Core data structure with metadata and utility methods
-- `UserProfile`: Tracks user progress and preferences
-- `NpcMessage`: Stores communication from NPCs
-- `TaskCategory` and `TaskDifficulty`: Enumeration types
-- `CategoryRank`: Provides thematic progression system
+---
 
-### Animation System
-- Replaced external libraries with native Compose animations
-- Implemented simple rotation effect for "Study" category tasks
-- Optimized animation performance for smoother transitions
-- Simplified animation system for better maintainability
+## Known Bugs (Verified in Code)
 
-## Current Limitations
-- Limited animation variety with category-specific animations for "Study" only
-- Local-only storage without cloud synchronization
-- Limited visual feedback for some user interactions
-- Standard notification design without rich interaction capabilities
+### ❌ categoryLevels never recalculated in awardXpForTask()
+`awardXpForTask()` in TodoViewModel.kt updates `categoryXp` but does NOT recalculate
+`categoryLevels`. CategoryProgressScreen reads `categoryLevels` → always shows Level 1 for all
+categories regardless of XP earned.
+*(completeSubtask does recalculate correctly — only the main task path is broken)*
 
-## Performance Considerations
-- Notification system is optimized for precise timing
-- Error handling and logging implemented throughout
-- Battery usage considerations for background processes
-- Animations are lightweight and non-blocking
-- Dark mode implementation reduces power usage on OLED screens
+### ❌ Sound is broken
+`playCompletionSound()` uses reflection to find `R$raw.task_complete` which doesn't exist.
+Falls back to a single ToneGenerator beep. No real sound effects in the app.
 
-## Recent Fixes
-- Repositioned add task button for improved UX
-- Implemented simplified paper folding animation effect for "Study" tasks
-- Expanded NPC dialogue options for shopping category
-- Fixed animation implementation issues using native Compose animations
-- Improved UI consistency and interaction feedback
+### ⚠️ NPC messages not persisted
+NpcRepository uses in-memory StateFlow only. Messages are lost when the app restarts.
 
-## Future Plans
-- Potential integration with AI APIs for dynamic NPC dialogue generation
-- Enhanced animation system with more category-specific effects
-- Improved visual feedback for user interactions
-- Additional task organization features
-- Extended NPC dialogue system and interaction options
+### ⚠️ AnimatedBackground gradient coordinates wrong
+`Brush.linearGradient` receives fractional values (−0.5 to +1.5) instead of pixel offsets.
+Gradient renders but not as designed.
 
-## Documentation
-- **FEATURES.md**: Contains the feature roadmap and implementation status
-- **RECENT_FIXES.md**: Tracks the latest bug fixes and improvements
-- **FUTURE.md**: Documents future development plans and architectural decisions
+### ⚠️ Alarm cancellation may fail
+`cancelTaskReminder()` uses raw `task.id.hashCode()` as requestCode without `Math.abs()`,
+unlike scheduling which does protect against negative values. May fail to cancel on some task IDs.
 
-*Last Updated: June 20, 2024* 
+---
+
+## Dead Code (Never Executed)
+
+- `MenuScreen.kt` — MainScreen uses its own ModalNavigationDrawer; MenuScreen is never called
+- `UserProfileCard.kt` — MainScreen inlines its own profile card; this component is unused
+- `NotificationTab.kt` — imported nowhere
+- `ProfileScreen.kt` — called nowhere
+- `SubtaskValues.kt` — global vars set in showAddSubtaskDialog() but never read by dialogs
+
+---
+
+## Architecture
+
+- Kotlin + Jetpack Compose, MVVM
+- `TodoViewModel` — central state coordinator (StateFlow)
+- `NpcRepository` — NPC/message management (in-memory)
+- `TaskStorage` / `UserProfileStorage` — SharedPreferences + Gson persistence
+- `AlarmScheduler` / `NotificationHelper` / `TaskAlarmReceiver` — notification pipeline
+- minSdk 26, targetSdk 35, Compose BOM 2024.09.00
+
+---
+
+## What Is NOT in the App (Despite Docs Saying Otherwise)
+
+- ❌ "Paper folding animation for Study tasks" — **never existed in source code**
+- ❌ "Sound effects implemented" — only a ToneGenerator beep fallback
+- ❌ "Refined animation system" — standard native Compose only
+- ❌ AI-generated NPC dialogue — not implemented

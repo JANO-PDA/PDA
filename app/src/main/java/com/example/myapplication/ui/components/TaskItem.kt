@@ -2,51 +2,99 @@ package com.example.myapplication.ui.components
 
 import androidx.compose.animation.*
 import androidx.compose.animation.core.*
-import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.clickable
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.foundation.background
+import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.ArrowDropDown
-import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.Edit
-import androidx.compose.material.icons.filled.Info
-import androidx.compose.material.icons.filled.Warning
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
-import androidx.compose.ui.draw.rotate
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
+import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.TransformOrigin
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.example.myapplication.data.models.Task
-import com.example.myapplication.data.models.TaskDifficulty
 import com.example.myapplication.data.models.TaskCategory
-import com.example.myapplication.ui.theme.AppIcons
-import com.example.myapplication.ui.theme.lineThrough
-import com.example.myapplication.ui.theme.none
+import com.example.myapplication.data.models.TaskDifficulty
+import com.example.myapplication.ui.theme.*
 import kotlinx.coroutines.launch
 import java.time.format.DateTimeFormatter
-import kotlinx.coroutines.delay
+import kotlin.math.roundToInt
 
-// Fix 10: Category-specific card tints
+// ─── Category accent mapping ─────────────────────────────────────────────────
+private fun categoryAccentColor(category: TaskCategory): Color = when (category) {
+    TaskCategory.WORK     -> CategoryWork
+    TaskCategory.STUDY    -> CategoryStudy
+    TaskCategory.HEALTH   -> CategoryHealth
+    TaskCategory.PERSONAL -> CategoryPersonal
+    TaskCategory.SHOPPING -> CategoryShopping
+    TaskCategory.OTHER    -> CategoryOther
+}
+
+// ─── Difficulty badge ────────────────────────────────────────────────────────
+private fun difficultyColor(difficulty: TaskDifficulty): Color = when (difficulty) {
+    TaskDifficulty.EASY      -> DiffEasy
+    TaskDifficulty.MEDIUM    -> DiffMedium
+    TaskDifficulty.HARD      -> DiffHard
+    TaskDifficulty.NIGHTMARE -> DiffNightmare
+}
+
 @Composable
-private fun categoryCardColor(category: TaskCategory): Color {
-    return when (category) {
-        TaskCategory.WORK     -> Color(0xFF1565C0).copy(alpha = 0.08f)
-        TaskCategory.STUDY    -> Color(0xFF2E7D32).copy(alpha = 0.08f)
-        TaskCategory.HEALTH   -> Color(0xFFC62828).copy(alpha = 0.08f)
-        TaskCategory.PERSONAL -> Color(0xFF6A1B9A).copy(alpha = 0.08f)
-        TaskCategory.SHOPPING -> Color(0xFFE65100).copy(alpha = 0.08f)
-        TaskCategory.OTHER    -> MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+private fun DifficultyBadge(difficulty: TaskDifficulty) {
+    val color = difficultyColor(difficulty)
+    Box(
+        modifier = Modifier
+            .clip(GlassPill)
+            .background(color.copy(alpha = 0.18f))
+            .padding(horizontal = 8.dp, vertical = 2.dp)
+    ) {
+        Text(
+            text  = difficulty.name,
+            style = MaterialTheme.typography.labelSmall,
+            color = color,
+            fontWeight = FontWeight.SemiBold
+        )
     }
 }
 
+// ─── Swipe action background ─────────────────────────────────────────────────
+@Composable
+private fun SwipeBackground(offsetX: Float) {
+    val isSwipingRight = offsetX > 0
+
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .clip(GlassCard)
+            .background(
+                if (isSwipingRight)
+                    MaterialTheme.colorScheme.primary.copy(alpha = 0.85f)
+                else
+                    MaterialTheme.colorScheme.error.copy(alpha = 0.85f)
+            ),
+        contentAlignment = if (isSwipingRight) Alignment.CenterStart else Alignment.CenterEnd
+    ) {
+        Icon(
+            imageVector = if (isSwipingRight) Icons.Default.Check else Icons.Default.Delete,
+            contentDescription = null,
+            tint   = Color.White,
+            modifier = Modifier.padding(horizontal = 24.dp)
+        )
+    }
+}
+
+// ─── Main TaskItem ────────────────────────────────────────────────────────────
 @Composable
 fun TaskItem(
     task: Task,
@@ -56,340 +104,402 @@ fun TaskItem(
     subtasks: List<Task> = emptyList(),
     onAddSubtask: ((Task) -> Unit)? = null,
     onCompleteSubtask: ((Task) -> Unit)? = null,
-    onEdit: (() -> Unit)? = null,  // Fix 9: edit callback
+    onEdit: (() -> Unit)? = null,
     level: Int = 0,
     isHighlighted: Boolean = false
 ) {
-    var isCompleting by remember { mutableStateOf(false) }
-    var isExpanded by remember { mutableStateOf(isHighlighted) }
+    var isExpanded    by remember { mutableStateOf(isHighlighted) }
+    var isCompleting  by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
 
-    var wasHighlighted by remember { mutableStateOf(false) }
+    // Swipe state
+    var offsetX by remember { mutableFloatStateOf(0f) }
+    val swipeThreshold = 200f
 
     LaunchedEffect(isHighlighted) {
-        if (isHighlighted) {
-            wasHighlighted = true
-            isExpanded = true
-        }
+        if (isHighlighted) isExpanded = true
     }
 
-    val scale by animateFloatAsState(
-        targetValue = if (isCompleting) 0.8f else if (isHighlighted) 1.05f else 1f,
-        animationSpec = spring(dampingRatio = Spring.DampingRatioNoBouncy, stiffness = Spring.StiffnessLow),
-        label = "scale"
+    val animatedOffsetX by animateFloatAsState(
+        targetValue  = offsetX,
+        animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy),
+        label = "swipeOffset"
     )
 
-    val alpha by animateFloatAsState(
-        targetValue = if (isCompleting) 0f else 1f,
-        animationSpec = tween(durationMillis = 200),
-        label = "alpha"
+    val cardAlpha by animateFloatAsState(
+        targetValue  = if (isCompleting) 0f else 1f,
+        animationSpec = tween(200),
+        label = "cardAlpha"
     )
 
-    val highlightAnim = rememberInfiniteTransition(label = "highlightPulse")
-    val highlightPulse by highlightAnim.animateFloat(
-        initialValue = 1f,
-        targetValue = 1.03f,
-        animationSpec = infiniteRepeatable(animation = tween(800), repeatMode = RepeatMode.Reverse),
-        label = "highlightPulse"
-    )
-
-    val isOverdue = task.isOverdue()
-    val isDueSoon = task.isDueSoon()
-
-    // Fix 10: use category tint as the default card color
-    val categoryColor = categoryCardColor(task.category)
-
-    val backgroundColor by animateColorAsState(
-        targetValue = when {
-            isHighlighted -> MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.7f)
-            isCompleting  -> MaterialTheme.colorScheme.primary.copy(alpha = 0.2f)
-            isOverdue     -> MaterialTheme.colorScheme.errorContainer
-            isDueSoon     -> MaterialTheme.colorScheme.tertiaryContainer
-            else          -> categoryColor
-        },
-        animationSpec = tween(durationMillis = 150, easing = LinearOutSlowInEasing),
-        label = "background"
-    )
-
-    val borderWidth by animateFloatAsState(
-        targetValue = if (wasHighlighted) { if (isHighlighted) 2f else 0f } else 0f,
-        animationSpec = tween(durationMillis = 500),
-        label = "borderWidth"
+    val cardScale by animateFloatAsState(
+        targetValue  = if (isCompleting) 0.9f else if (isHighlighted) 1.03f else 1f,
+        animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy),
+        label = "cardScale"
     )
 
     val arrowRotation by animateFloatAsState(
-        targetValue = if (isExpanded) 180f else 0f,
-        animationSpec = tween(durationMillis = 200, easing = FastOutSlowInEasing),
-        label = "arrowRotation"
+        targetValue  = if (isExpanded) 180f else 0f,
+        animationSpec = tween(200, easing = FastOutSlowInEasing),
+        label = "arrowRot"
     )
 
-    val itemScale = if (isHighlighted) highlightPulse else scale
+    val accent        = categoryAccentColor(task.category)
+    val isOverdue     = task.isOverdue()
+    val isDueSoon     = task.isDueSoon()
 
-    Column(
-        modifier = modifier
-            .fillMaxWidth()
-            .padding(start = (level * 16).dp)
-    ) {
-        Card(
+    val surfaceColor  = MaterialTheme.colorScheme.surface
+    val cardBg by animateColorAsState(
+        targetValue  = when {
+            isHighlighted -> MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.6f)
+            isOverdue     -> MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.85f)
+            isDueSoon     -> MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.7f)
+            else          -> surfaceColor
+        },
+        animationSpec = tween(150),
+        label = "cardBg"
+    )
+
+    // Level-based indent for subtasks
+    val indent = (level * 16).dp
+
+    // Lottie complete animation state
+    var showCompleteLottie by remember { mutableStateOf(false) }
+
+    Column(modifier = modifier.fillMaxWidth().padding(start = indent)) {
+        Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .scale(itemScale)
-                .alpha(alpha)
-                .animateContentSize(animationSpec = tween(durationMillis = 150, easing = LinearOutSlowInEasing)),
-            elevation = CardDefaults.cardElevation(defaultElevation = if (isHighlighted) 8.dp else 2.dp),
-            colors = CardDefaults.cardColors(containerColor = backgroundColor),
-            border = if (borderWidth > 0) BorderStroke(borderWidth.dp, MaterialTheme.colorScheme.primary) else null
+                .scale(cardScale)
+                .alpha(cardAlpha)
         ) {
-            Column(
+            // Swipe reveal background (only for non-completed, non-subtask)
+            if (!task.isCompleted && offsetX != 0f) {
+                SwipeBackground(offsetX = animatedOffsetX)
+            }
+
+            // Card with left accent stripe
+            Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(16.dp),
-            ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Column(modifier = Modifier.weight(1f)) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            // Category icon with pulse for urgent tasks
-                            val pulseAnim = rememberInfiniteTransition(label = "iconPulse")
-                            val iconScale by pulseAnim.animateFloat(
-                                initialValue = 0.9f,
-                                targetValue = 1.1f,
-                                animationSpec = infiniteRepeatable(
-                                    animation = tween(1500),
-                                    repeatMode = RepeatMode.Reverse
-                                ),
-                                label = "iconPulse"
-                            )
-
-                            Icon(
-                                imageVector = AppIcons.getCategoryIcon(task.category),
-                                contentDescription = "${task.category.name} icon",
-                                tint = MaterialTheme.colorScheme.primary,
-                                modifier = Modifier
-                                    .padding(end = 8.dp)
-                                    .size(24.dp)
-                                    .scale(if (isDueSoon || isOverdue) iconScale else 1f)
-                            )
-
-                            Text(
-                                text = task.title,
-                                style = MaterialTheme.typography.titleMedium,
-                                textDecoration = if (task.isCompleted) lineThrough else none,
-                                color = if (task.isCompleted)
-                                    MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
-                                else
-                                    MaterialTheme.colorScheme.onSurface
-                            )
-
-                            // Fix 4: use PulsatingIcon for overdue warning instead of inline animation
-                            if (isOverdue) {
-                                PulsatingIcon(
-                                    icon = Icons.Default.Warning,
-                                    contentDescription = "Overdue task",
-                                    tint = MaterialTheme.colorScheme.error,
-                                    rotateEnabled = false,
-                                    pulseMinScale = 0.85f,
-                                    pulseMaxScale = 1.15f,
-                                    pulseDurationMs = 500,
-                                    modifier = Modifier
-                                        .padding(start = 8.dp)
-                                        .size(24.dp)
-                                )
-                            } else if (isDueSoon) {
-                                Icon(
-                                    imageVector = Icons.Default.Info,
-                                    contentDescription = "Due soon",
-                                    tint = MaterialTheme.colorScheme.tertiary,
-                                    modifier = Modifier.padding(start = 8.dp)
+                    .offset { IntOffset(animatedOffsetX.roundToInt(), 0) }
+                    .clip(GlassCard)
+                    .background(cardBg)
+                    .then(
+                        if (!task.isCompleted) {
+                            Modifier.pointerInput(task.id) {
+                                detectHorizontalDragGestures(
+                                    onDragEnd = {
+                                        when {
+                                            offsetX > swipeThreshold -> {
+                                                scope.launch {
+                                                    isCompleting = true
+                                                    kotlinx.coroutines.delay(120)
+                                                    onComplete()
+                                                    offsetX = 0f
+                                                    isCompleting = false
+                                                }
+                                            }
+                                            offsetX < -swipeThreshold -> {
+                                                scope.launch {
+                                                    isCompleting = true
+                                                    kotlinx.coroutines.delay(120)
+                                                    onDelete()
+                                                    offsetX = 0f
+                                                    isCompleting = false
+                                                }
+                                            }
+                                            else -> offsetX = 0f
+                                        }
+                                    },
+                                    onDragCancel = { offsetX = 0f },
+                                    onHorizontalDrag = { _, dragAmount ->
+                                        offsetX = (offsetX + dragAmount).coerceIn(-swipeThreshold * 1.5f, swipeThreshold * 1.5f)
+                                    }
                                 )
                             }
+                        } else Modifier
+                    )
+            ) {
+                // Left accent stripe
+                Box(
+                    modifier = Modifier
+                        .width(4.dp)
+                        .fillMaxHeight()
+                        .clip(GlassStripe)
+                        .background(accent)
+                )
+
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(start = 12.dp, end = 8.dp, top = 12.dp, bottom = 12.dp)
+                ) {
+                    // ─ Top row: icon + title + badges + expand arrow ─────────
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        // Category icon with optional urgency pulse
+                        val pulseAnim = rememberInfiniteTransition(label = "iconPulse")
+                        val iconScale by pulseAnim.animateFloat(
+                            initialValue = 0.9f,
+                            targetValue  = 1.1f,
+                            animationSpec = infiniteRepeatable(tween(1200), RepeatMode.Reverse),
+                            label = "iconPulse"
+                        )
+                        Icon(
+                            imageVector = AppIcons.getCategoryIcon(task.category),
+                            contentDescription = null,
+                            tint   = accent,
+                            modifier = Modifier
+                                .size(20.dp)
+                                .scale(if (isOverdue || isDueSoon) iconScale else 1f)
+                        )
+
+                        Spacer(Modifier.width(8.dp))
+
+                        // Title
+                        Text(
+                            text  = task.title,
+                            style = MaterialTheme.typography.titleSmall,
+                            fontWeight = FontWeight.SemiBold,
+                            color = if (task.isCompleted)
+                                MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
+                            else
+                                MaterialTheme.colorScheme.onSurface,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier.weight(1f)
+                        )
+
+                        Spacer(Modifier.width(8.dp))
+
+                        // Difficulty badge
+                        if (!task.isCompleted) DifficultyBadge(task.difficulty)
+
+                        // Overdue / due-soon icon
+                        if (isOverdue) {
+                            PulsatingIcon(
+                                icon = Icons.Default.Warning,
+                                contentDescription = "Overdue",
+                                tint = MaterialTheme.colorScheme.error,
+                                rotateEnabled = false,
+                                pulseMinScale = 0.85f,
+                                pulseMaxScale = 1.15f,
+                                pulseDurationMs = 500,
+                                modifier = Modifier.padding(start = 4.dp).size(18.dp)
+                            )
+                        } else if (isDueSoon) {
+                            Icon(
+                                Icons.Default.Schedule,
+                                contentDescription = "Due soon",
+                                tint   = MaterialTheme.colorScheme.tertiary,
+                                modifier = Modifier.padding(start = 4.dp).size(18.dp)
+                            )
                         }
 
-                        if (task.description.isNotEmpty()) {
-                            Spacer(modifier = Modifier.height(4.dp))
-                            val descriptionOpacity by animateFloatAsState(
-                                targetValue = if (isExpanded) 1f else 0.7f,
-                                label = "descOpacity"
-                            )
-                            Text(
-                                text = task.description,
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = descriptionOpacity),
-                                maxLines = if (isExpanded) Int.MAX_VALUE else 2,
-                                overflow = TextOverflow.Ellipsis
+                        // Expand arrow
+                        IconButton(
+                            onClick = { isExpanded = !isExpanded },
+                            modifier = Modifier.size(32.dp)
+                        ) {
+                            Icon(
+                                Icons.Default.ExpandMore,
+                                contentDescription = if (isExpanded) "Collapse" else "Expand",
+                                modifier = Modifier.rotate(arrowRotation),
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
+                    }
 
-                        task.dueDate?.let {
-                            val timeStr = task.dueTime?.format(DateTimeFormatter.ofPattern("HH:mm")) ?: ""
-                            val dateStr = it.format(DateTimeFormatter.ofPattern("MMM dd, yyyy"))
-                            val formattedDate = if (timeStr.isNotEmpty()) "$dateStr at $timeStr" else dateStr
+                    // ─ Description + due date (always visible, collapsed) ────
+                    if (task.description.isNotEmpty()) {
+                        Spacer(Modifier.height(4.dp))
+                        Text(
+                            text  = task.description,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.65f),
+                            maxLines = if (isExpanded) Int.MAX_VALUE else 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    }
 
-                            Spacer(modifier = Modifier.height(4.dp))
-                            val dateColor by animateColorAsState(
-                                targetValue = when {
+                    task.dueDate?.let { date ->
+                        Spacer(Modifier.height(4.dp))
+                        val timeStr = task.dueTime?.format(DateTimeFormatter.ofPattern("HH:mm")) ?: ""
+                        val dateStr = date.format(DateTimeFormatter.ofPattern("MMM dd"))
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(
+                                Icons.Default.Schedule,
+                                contentDescription = null,
+                                tint = when {
                                     isOverdue -> MaterialTheme.colorScheme.error
                                     isDueSoon -> MaterialTheme.colorScheme.tertiary
-                                    else      -> MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                                    else      -> MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
                                 },
-                                label = "dateColor"
+                                modifier = Modifier.size(12.dp)
                             )
+                            Spacer(Modifier.width(4.dp))
                             Text(
-                                text = "Due: $formattedDate",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = dateColor
+                                text  = if (timeStr.isNotEmpty()) "$dateStr · $timeStr" else dateStr,
+                                style = MaterialTheme.typography.labelSmall,
+                                color = when {
+                                    isOverdue -> MaterialTheme.colorScheme.error
+                                    isDueSoon -> MaterialTheme.colorScheme.tertiary
+                                    else      -> MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
+                                }
                             )
                         }
                     }
 
-                    IconButton(onClick = { isExpanded = !isExpanded }) {
-                        Icon(
-                            imageVector = Icons.Default.ArrowDropDown,
-                            contentDescription = if (isExpanded) "Collapse" else "Expand",
-                            modifier = Modifier.rotate(arrowRotation).size(24.dp)
-                        )
-                    }
-                }
-
-                // Subtasks section
-                AnimatedVisibility(
-                    visible = isExpanded && subtasks.isNotEmpty(),
-                    enter = expandVertically(animationSpec = tween(150, easing = LinearOutSlowInEasing)) + fadeIn(tween(150)),
-                    exit = shrinkVertically(animationSpec = tween(150, easing = LinearOutSlowInEasing)) + fadeOut(tween(100))
-                ) {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(top = 8.dp)
+                    // ─ Expanded: subtasks + action buttons ───────────────────
+                    AnimatedVisibility(
+                        visible = isExpanded,
+                        enter   = expandVertically(tween(160, easing = LinearOutSlowInEasing)) + fadeIn(tween(160)),
+                        exit    = shrinkVertically(tween(120, easing = FastOutLinearInEasing)) + fadeOut(tween(100))
                     ) {
-                        Text(
-                            text = "Subtasks",
-                            style = MaterialTheme.typography.titleSmall,
-                            modifier = Modifier.padding(vertical = 4.dp)
-                        )
-
-                        subtasks.forEach { subtask ->
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(vertical = 4.dp),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.ArrowDropDown,
-                                    contentDescription = null,
-                                    modifier = Modifier.size(16.dp)
-                                )
+                        Column {
+                            if (subtasks.isNotEmpty()) {
+                                Spacer(Modifier.height(8.dp))
+                                HorizontalDivider(color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.08f))
+                                Spacer(Modifier.height(8.dp))
                                 Text(
-                                    text = subtask.title,
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    textDecoration = if (subtask.isCompleted) lineThrough else none,
-                                    modifier = Modifier.weight(1f).padding(horizontal = 8.dp)
+                                    text  = "Subtasks (${subtasks.count { it.isCompleted }}/${subtasks.size})",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
-                                if (onCompleteSubtask != null && !subtask.isCompleted) {
-                                    IconButton(
-                                        onClick = { onCompleteSubtask(subtask) },
-                                        modifier = Modifier.size(32.dp)
+                                Spacer(Modifier.height(4.dp))
+                                subtasks.forEach { subtask ->
+                                    Row(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(vertical = 3.dp),
+                                        verticalAlignment = Alignment.CenterVertically
                                     ) {
                                         Icon(
-                                            imageVector = Icons.Default.Check,
-                                            contentDescription = "Complete subtask",
-                                            tint = MaterialTheme.colorScheme.primary
+                                            Icons.Default.SubdirectoryArrowRight,
+                                            contentDescription = null,
+                                            tint   = accent.copy(alpha = 0.6f),
+                                            modifier = Modifier.size(14.dp)
                                         )
+                                        Spacer(Modifier.width(6.dp))
+                                        Text(
+                                            text  = subtask.title,
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = if (subtask.isCompleted)
+                                                MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f)
+                                            else
+                                                MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f),
+                                            modifier = Modifier.weight(1f),
+                                            textDecoration = if (subtask.isCompleted)
+                                                androidx.compose.ui.text.style.TextDecoration.LineThrough
+                                            else null
+                                        )
+                                        if (!subtask.isCompleted && onCompleteSubtask != null) {
+                                            IconButton(
+                                                onClick = { onCompleteSubtask(subtask) },
+                                                modifier = Modifier.size(28.dp)
+                                            ) {
+                                                Icon(
+                                                    Icons.Default.Check,
+                                                    contentDescription = "Complete subtask",
+                                                    tint = accent,
+                                                    modifier = Modifier.size(16.dp)
+                                                )
+                                            }
+                                        }
                                     }
                                 }
                             }
-                        }
-                    }
-                }
 
-                // Action buttons row
-                AnimatedVisibility(
-                    visible = isExpanded,
-                    enter = expandVertically(animationSpec = tween(150, easing = LinearOutSlowInEasing)) + fadeIn(tween(150)),
-                    exit = shrinkVertically(animationSpec = tween(150, easing = LinearOutSlowInEasing)) + fadeOut(tween(100))
-                ) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(top = 8.dp),
-                        horizontalArrangement = Arrangement.End
-                    ) {
-                        if (!task.isCompleted) {
-                            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                // Add subtask button
-                                if (!task.isSubtask() && onAddSubtask != null) {
-                                    val addButtonAnim = rememberInfiniteTransition(label = "addButtonPulse")
-                                    val addButtonScale by addButtonAnim.animateFloat(
-                                        initialValue = 1f,
-                                        targetValue = 1.1f,
-                                        animationSpec = infiniteRepeatable(animation = tween(1000), repeatMode = RepeatMode.Reverse),
-                                        label = "addButtonPulse"
-                                    )
+                            if (!task.isCompleted) {
+                                Spacer(Modifier.height(8.dp))
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.End,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    // Add subtask
+                                    if (!task.isSubtask() && onAddSubtask != null) {
+                                        TextButton(
+                                            onClick = { onAddSubtask(task) },
+                                            contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp)
+                                        ) {
+                                            Icon(Icons.Default.Add, null, Modifier.size(14.dp))
+                                            Spacer(Modifier.width(4.dp))
+                                            Text("Subtask", style = MaterialTheme.typography.labelSmall)
+                                        }
+                                    }
+                                    // Edit
+                                    if (onEdit != null) {
+                                        IconButton(onClick = onEdit, modifier = Modifier.size(36.dp)) {
+                                            Icon(
+                                                Icons.Default.Edit,
+                                                contentDescription = "Edit",
+                                                tint = MaterialTheme.colorScheme.secondary,
+                                                modifier = Modifier.size(18.dp)
+                                            )
+                                        }
+                                    }
+                                    // Complete
                                     IconButton(
-                                        onClick = { onAddSubtask(task) },
-                                        modifier = Modifier.scale(addButtonScale)
+                                        onClick = {
+                                            scope.launch {
+                                                showCompleteLottie = true
+                                                isCompleting = true
+                                                kotlinx.coroutines.delay(150)
+                                                onComplete()
+                                            }
+                                        },
+                                        modifier = Modifier.size(36.dp)
                                     ) {
                                         Icon(
-                                            imageVector = Icons.Default.Add,
-                                            contentDescription = "Add subtask",
-                                            tint = MaterialTheme.colorScheme.tertiary
+                                            Icons.Default.Check,
+                                            contentDescription = "Complete",
+                                            tint = MaterialTheme.colorScheme.primary,
+                                            modifier = Modifier.size(18.dp)
                                         )
                                     }
-                                }
-
-                                // Fix 9: Edit button
-                                if (onEdit != null) {
-                                    IconButton(onClick = { onEdit() }) {
+                                    // Delete
+                                    IconButton(
+                                        onClick = {
+                                            scope.launch {
+                                                isCompleting = true
+                                                kotlinx.coroutines.delay(120)
+                                                onDelete()
+                                            }
+                                        },
+                                        modifier = Modifier.size(36.dp)
+                                    ) {
                                         Icon(
-                                            imageVector = Icons.Default.Edit,
-                                            contentDescription = "Edit task",
-                                            tint = MaterialTheme.colorScheme.secondary
+                                            Icons.Default.Delete,
+                                            contentDescription = "Delete",
+                                            tint = MaterialTheme.colorScheme.error,
+                                            modifier = Modifier.size(18.dp)
                                         )
                                     }
-                                }
-
-                                // Complete button
-                                IconButton(
-                                    onClick = {
-                                        scope.launch {
-                                            isCompleting = true
-                                            delay(150)
-                                            onComplete()
-                                        }
-                                    }
-                                ) {
-                                    Icon(
-                                        imageVector = Icons.Default.Check,
-                                        contentDescription = "Complete task",
-                                        tint = MaterialTheme.colorScheme.primary
-                                    )
-                                }
-
-                                // Delete button
-                                IconButton(
-                                    onClick = {
-                                        scope.launch {
-                                            isCompleting = true
-                                            delay(150)
-                                            onDelete()
-                                        }
-                                    }
-                                ) {
-                                    Icon(
-                                        imageVector = Icons.Default.Delete,
-                                        contentDescription = "Delete task",
-                                        tint = MaterialTheme.colorScheme.error
-                                    )
                                 }
                             }
                         }
                     }
                 }
             }
+
+            // Lottie inline task-complete animation (overlaid on card)
+            if (showCompleteLottie) {
+                Box(
+                    modifier = Modifier.matchParentSize(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    TaskCompleteLottie(
+                        visible    = showCompleteLottie,
+                        size       = 72.dp,
+                        onFinished = { showCompleteLottie = false }
+                    )
+                }
+            }
         }
     }
 }
+

@@ -1,14 +1,15 @@
 package com.example.myapplication.ui.components
 
+import androidx.compose.animation.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Cancel
+import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -18,12 +19,13 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.example.myapplication.data.models.NpcMessage
 import com.example.myapplication.data.models.TaskCategory
-import com.example.myapplication.ui.theme.NpcAvatars
+import com.example.myapplication.ui.theme.*
 import java.text.SimpleDateFormat
 import java.util.*
 
 /**
- * Component to display a single NPC message
+ * Chat-bubble style NPC message card.
+ * Unread messages get a coloured accent border and brighter bubble.
  */
 @Composable
 fun NpcMessageItem(
@@ -32,125 +34,117 @@ fun NpcMessageItem(
     onReadMessage: (String) -> Unit = {},
     onClick: () -> Unit = {}
 ) {
-    val isRead = message.isRead
-    val categoryColor = getCategoryColor(message.category)
+    val accent    = categoryAccentColor(message.category)
     val avatarIcon = NpcAvatars.getAvatarForNpc(message.npcId)
-    val timeFormatter = SimpleDateFormat("HH:mm", Locale.getDefault())
-    val dateFormatter = SimpleDateFormat("MMM dd", Locale.getDefault())
-    
-    Card(
+    val timeStr   = formatMessageTime(message.timestamp)
+    val isUnread  = !message.isRead
+
+    Row(
         modifier = modifier
             .fillMaxWidth()
-            .padding(8.dp)
-            .clickable(
-                interactionSource = remember { MutableInteractionSource() },
-                indication = null,
-                onClick = onClick
-            ),
-        elevation = CardDefaults.cardElevation(
-            defaultElevation = if (!isRead) 4.dp else 1.dp
-        ),
-        colors = CardDefaults.cardColors(
-            containerColor = if (!isRead) 
-                categoryColor.copy(alpha = 0.1f)
-            else 
-                MaterialTheme.colorScheme.surface
-        )
+            .clickable { onClick() }
+            .padding(horizontal = 16.dp, vertical = 6.dp),
+        verticalAlignment = Alignment.Top
     ) {
-        Row(
+        // ─ Avatar circle ──────────────────────────────────────────────────────
+        Box(
             modifier = Modifier
-                .fillMaxWidth()
-                .padding(12.dp),
-            verticalAlignment = Alignment.Top
+                .size(44.dp)
+                .clip(CircleShape)
+                .background(accent.copy(alpha = if (isUnread) 0.25f else 0.12f)),
+            contentAlignment = Alignment.Center
         ) {
-            // Avatar
-            Box(
-                modifier = Modifier
-                    .size(48.dp)
-                    .clip(CircleShape)
-                    .background(categoryColor.copy(alpha = 0.2f)),
-                contentAlignment = Alignment.Center
+            Icon(
+                imageVector = avatarIcon,
+                contentDescription = message.npcName,
+                tint = accent,
+                modifier = Modifier.size(26.dp)
+            )
+        }
+
+        Spacer(Modifier.width(12.dp))
+
+        // ─ Bubble ─────────────────────────────────────────────────────────────
+        Column(modifier = Modifier.weight(1f)) {
+            // Header row: name + time + unread dot
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Icon(
-                    imageVector = avatarIcon,
-                    contentDescription = null,
-                    tint = categoryColor,
-                    modifier = Modifier.size(28.dp)
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        text  = message.npcName,
+                        style = MaterialTheme.typography.labelLarge,
+                        fontWeight = if (isUnread) FontWeight.Bold else FontWeight.SemiBold,
+                        color = if (isUnread) MaterialTheme.colorScheme.onSurface
+                                else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.75f)
+                    )
+                    if (isUnread) {
+                        Spacer(Modifier.width(6.dp))
+                        Box(
+                            modifier = Modifier
+                                .size(7.dp)
+                                .clip(CircleShape)
+                                .background(accent)
+                        )
+                    }
+                }
+                Text(
+                    text  = timeStr,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.45f)
                 )
             }
-            
-            Spacer(modifier = Modifier.width(12.dp))
-            
-            // Message content
-            Column(modifier = Modifier.weight(1f)) {
-                // Header: NPC name and time
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        text = message.npcName,
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold,
-                        color = if (!isRead) MaterialTheme.colorScheme.onBackground else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f)
-                    )
-                    
-                    Text(
-                        text = if (isWithin24Hours(message.timestamp)) 
-                            timeFormatter.format(message.timestamp)
-                        else
-                            dateFormatter.format(message.timestamp),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
-                    )
-                }
-                
-                Spacer(modifier = Modifier.height(4.dp))
-                
-                // Message
-                Text(
-                    text = message.message,
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = if (!isRead) MaterialTheme.colorScheme.onBackground else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis
-                )
-                
-                Spacer(modifier = Modifier.height(8.dp))
-                
-                // Task status indicator
-                Box(
-                    modifier = Modifier
-                        .align(Alignment.End)
-                        .clip(RoundedCornerShape(16.dp))
-                        .background(
-                            if (message.isFailure) 
-                                MaterialTheme.colorScheme.error.copy(alpha = 0.1f) 
-                            else 
-                                MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)
+
+            Spacer(Modifier.height(4.dp))
+
+            // Bubble background
+            val bubbleBg = when {
+                message.isFailure -> MaterialTheme.colorScheme.error.copy(alpha = if (isUnread) 0.14f else 0.07f)
+                isUnread          -> accent.copy(alpha = 0.13f)
+                else              -> MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.7f)
+            }
+
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(
+                        androidx.compose.foundation.shape.RoundedCornerShape(
+                            topStart = 2.dp, topEnd = 12.dp, bottomEnd = 12.dp, bottomStart = 12.dp
                         )
-                        .padding(horizontal = 8.dp, vertical = 4.dp)
-                ) {
-                    Text(
-                        text = if (message.isFailure) "Failed Task" else "Completed Task",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = if (message.isFailure) 
-                            MaterialTheme.colorScheme.error 
-                        else 
-                            MaterialTheme.colorScheme.primary
                     )
-                }
-                
-                // Mark as read indicator
-                if (!isRead) {
-                    Spacer(modifier = Modifier.height(8.dp))
-                    TextButton(
-                        onClick = { onReadMessage(message.id) },
-                        modifier = Modifier.align(Alignment.End),
-                        contentPadding = PaddingValues(horizontal = 8.dp, vertical = 0.dp)
-                    ) {
-                        Text("Mark as read")
+                    .background(bubbleBg)
+                    .padding(horizontal = 12.dp, vertical = 8.dp)
+            ) {
+                Column {
+                    Text(
+                        text     = message.message,
+                        style    = MaterialTheme.typography.bodyMedium,
+                        color    = if (isUnread) MaterialTheme.colorScheme.onSurface
+                                   else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.75f),
+                        maxLines = 3,
+                        overflow = TextOverflow.Ellipsis
+                    )
+
+                    Spacer(Modifier.height(6.dp))
+
+                    // Status pill
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            imageVector = if (message.isFailure) Icons.Default.Cancel else Icons.Default.CheckCircle,
+                            contentDescription = null,
+                            tint = if (message.isFailure) MaterialTheme.colorScheme.error
+                                   else MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(12.dp)
+                        )
+                        Spacer(Modifier.width(4.dp))
+                        Text(
+                            text  = if (message.isFailure) "Task failed" else "Task completed",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = if (message.isFailure) MaterialTheme.colorScheme.error
+                                    else MaterialTheme.colorScheme.primary
+                        )
                     }
                 }
             }
@@ -158,26 +152,23 @@ fun NpcMessageItem(
     }
 }
 
-/**
- * Check if the timestamp is within the last 24 hours
- */
-private fun isWithin24Hours(timestamp: Date): Boolean {
-    val now = System.currentTimeMillis()
-    val diff = now - timestamp.time
-    return diff < 24 * 60 * 60 * 1000
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
+private fun categoryAccentColor(category: TaskCategory): Color = when (category) {
+    TaskCategory.WORK     -> CategoryWork
+    TaskCategory.STUDY    -> CategoryStudy
+    TaskCategory.HEALTH   -> CategoryHealth
+    TaskCategory.PERSONAL -> CategoryPersonal
+    TaskCategory.SHOPPING -> CategoryShopping
+    TaskCategory.OTHER    -> CategoryOther
 }
 
-/**
- * Get color for task category
- */
-@Composable
-private fun getCategoryColor(category: TaskCategory): Color {
-    return when (category) {
-        TaskCategory.WORK -> MaterialTheme.colorScheme.tertiary
-        TaskCategory.STUDY -> MaterialTheme.colorScheme.primary
-        TaskCategory.HEALTH -> MaterialTheme.colorScheme.secondary
-        TaskCategory.PERSONAL -> MaterialTheme.colorScheme.error
-        TaskCategory.SHOPPING -> MaterialTheme.colorScheme.primaryContainer
-        TaskCategory.OTHER -> MaterialTheme.colorScheme.inversePrimary
+private fun formatMessageTime(timestamp: Date): String {
+    val diff = System.currentTimeMillis() - timestamp.time
+    return when {
+        diff < 60_000L         -> "just now"
+        diff < 3_600_000L      -> "${diff / 60_000}m ago"
+        diff < 86_400_000L     -> SimpleDateFormat("HH:mm", Locale.getDefault()).format(timestamp)
+        else                   -> SimpleDateFormat("MMM dd", Locale.getDefault()).format(timestamp)
     }
-} 
+}

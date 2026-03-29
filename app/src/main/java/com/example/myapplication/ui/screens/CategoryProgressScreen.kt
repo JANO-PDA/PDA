@@ -1,226 +1,285 @@
 package com.example.myapplication.ui.screens
 
+import androidx.activity.compose.BackHandler
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.activity.compose.BackHandler
 import com.example.myapplication.data.models.*
-import com.example.myapplication.ui.viewmodel.TodoViewModel
+import com.example.myapplication.ui.components.AnimatedBackground
 import com.example.myapplication.ui.theme.AppIcons
+import com.example.myapplication.ui.theme.GlassCard
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CategoryProgressScreen(
-    viewModel: TodoViewModel,
+    viewModel: com.example.myapplication.ui.viewmodel.TodoViewModel,
     onNavigateBack: () -> Unit
 ) {
     val userProfile by viewModel.userProfile.collectAsState()
-    val categoryStats by viewModel.categoryStats.collectAsState()
 
-    // Handle system back button
-    BackHandler {
-        onNavigateBack()
-    }
-    
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text("Category Progress") },
-                navigationIcon = {
-                    IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Go back")
+    BackHandler { onNavigateBack() }
+
+    AnimatedBackground {
+        Scaffold(
+            containerColor = MaterialTheme.colorScheme.background.copy(alpha = 0f),
+            topBar = {
+                TopAppBar(
+                    title = { Text("Category Stats") },
+                    colors = TopAppBarDefaults.topAppBarColors(
+                        containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.92f)
+                    ),
+                    navigationIcon = {
+                        IconButton(onClick = onNavigateBack) {
+                            Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back")
+                        }
                     }
-                }
-            )
-        }
-    ) { padding ->
-        LazyColumn(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding)
-                .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
-        ) {
-            item {
-                Text(
-                    text = "Your Progress by Category",
-                    style = MaterialTheme.typography.headlineMedium,
-                    fontWeight = FontWeight.Bold,
-                    modifier = Modifier.padding(bottom = 16.dp)
                 )
             }
-            
-            items(TaskCategory.values().toList()) { category ->
-                val categoryXp = userProfile.categoryXp[category] ?: 0
-                val categoryLevel = userProfile.categoryLevels[category] ?: 1
-                val tasksCompleted = userProfile.categoryTasksCompleted[category] ?: 0
-                val rankInfo = getCategoryRankInfo(category, tasksCompleted)
-                val stat = categoryStats[category]
-                
-                Card(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 4.dp)
-                ) {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(16.dp)
-                    ) {
-                        // Category Header
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(8.dp)
-                            ) {
-                                Icon(
-                                    imageVector = AppIcons.getCategoryIcon(category),
-                                    contentDescription = null,
-                                    tint = MaterialTheme.colorScheme.primary,
-                                    modifier = Modifier.size(32.dp)
-                                )
-                                Text(
-                                    text = category.name,
-                                    style = MaterialTheme.typography.titleLarge,
-                                    fontWeight = FontWeight.Bold
-                                )
-                            }
-                        }
-                        
-                        Spacer(modifier = Modifier.height(8.dp))
-                        
-                        // Rank Information
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            Icon(
-                                imageVector = AppIcons.getRankIcon(getCategoryRankLevel(tasksCompleted)),
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.primary,
-                                modifier = Modifier.size(24.dp)
-                            )
-                            Column {
-                                Text(
-                                    text = rankInfo.displayName,
-                                    style = MaterialTheme.typography.titleMedium,
-                                    color = MaterialTheme.colorScheme.primary
-                                )
-                                Text(
-                                    text = rankInfo.description,
-                                    style = MaterialTheme.typography.bodyMedium
-                                )
-                            }
-                        }
-                        
-                        Spacer(modifier = Modifier.height(16.dp))
-                        
-                        // Progress Section
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween
-                        ) {
-                            Text(
-                                text = "Level $categoryLevel",
-                                style = MaterialTheme.typography.titleMedium
-                            )
-                            Text(
-                                text = "$categoryXp XP",
-                                style = MaterialTheme.typography.titleMedium,
-                                color = MaterialTheme.colorScheme.primary
-                            )
-                        }
-                        
-                        Spacer(modifier = Modifier.height(8.dp))
-                        
-                        // XP Progress Bar
-                        LinearProgressIndicator(
-                            progress = { calculateProgressToNextLevel(categoryXp) },
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(12.dp)
-                        )
-                        
-                        Spacer(modifier = Modifier.height(16.dp))
-                        
-                        // Tasks Progress
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween
-                        ) {
-                            Text(
-                                text = "Tasks Completed: $tasksCompleted",
-                                style = MaterialTheme.typography.bodyLarge
-                            )
-                            
-                            val taskStats = categoryStats[category]
-                            if (taskStats != null) {
-                                Text(
-                                    text = "Total Tasks: ${taskStats.totalTasks}",
-                                    style = MaterialTheme.typography.bodyLarge
-                                )
-                            }
-                        }
-                        
-                        Spacer(modifier = Modifier.height(8.dp))
-                        
-                        // Task Progress Bar
-                        val progressPercentage = if (getCategoryRankLevel(tasksCompleted) != CategoryRankLevel.values().last()) {
-                            val currentRank = getCategoryRankLevel(tasksCompleted)
-                            val nextRank = CategoryRankLevel.values()[currentRank.ordinal + 1]
-                            val tasksForCurrentRank = currentRank.requiredTasks
-                            val tasksForNextRank = nextRank.requiredTasks
-                            val tasksNeeded = tasksForNextRank - tasksForCurrentRank
-                            val tasksProgress = tasksCompleted - tasksForCurrentRank
-                            
-                            tasksProgress.toFloat() / tasksNeeded
-                        } else {
-                            1f
-                        }
-                        
-                        LinearProgressIndicator(
-                            progress = { progressPercentage },
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(12.dp),
-                            color = MaterialTheme.colorScheme.tertiary
-                        )
-                        
-                        Spacer(modifier = Modifier.height(8.dp))
-                        
-                        // Tasks to next rank
-                        if (getCategoryRankLevel(tasksCompleted) != CategoryRankLevel.values().last()) {
-                            val nextRank = CategoryRankLevel.values()[getCategoryRankLevel(tasksCompleted).ordinal + 1]
-                            val tasksNeeded = nextRank.requiredTasks - tasksCompleted
-                            
-                            Text(
-                                text = "$tasksNeeded more tasks to next rank",
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.tertiary
-                            )
-                        } else {
-                            Text(
-                                text = "Maximum rank achieved!",
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.tertiary
-                            )
-                        }
-                    }
+        ) { padding ->
+            LazyColumn(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(padding)
+                    .padding(horizontal = 16.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp),
+                contentPadding = PaddingValues(vertical = 16.dp)
+            ) {
+                items(TaskCategory.entries) { category ->
+                    val categoryXp       = userProfile.categoryXp[category] ?: 0
+                    val categoryLevel    = userProfile.categoryLevels[category] ?: 1
+                    val tasksCompleted   = userProfile.categoryTasksCompleted[category] ?: 0
+                    val rankInfo         = getCategoryRankInfo(category, tasksCompleted)
+                    val xpProgress       = calculateProgressToNextLevel(categoryXp)
+
+                    CategoryStatCard(
+                        category       = category,
+                        categoryXp     = categoryXp,
+                        categoryLevel  = categoryLevel,
+                        tasksCompleted = tasksCompleted,
+                        rankInfo       = rankInfo,
+                        xpProgress     = xpProgress
+                    )
                 }
             }
         }
     }
-} 
+}
+
+@Composable
+private fun CategoryStatCard(
+    category: TaskCategory,
+    categoryXp: Int,
+    categoryLevel: Int,
+    tasksCompleted: Int,
+    rankInfo: RankInfo,
+    xpProgress: Float
+) {
+    val accent = categoryAccentColor(category)
+
+    val animXpProgress by animateFloatAsState(
+        targetValue   = xpProgress,
+        animationSpec = tween(700, easing = FastOutSlowInEasing),
+        label         = "xpProg"
+    )
+
+    val rankProgress = rankProgressFor(tasksCompleted)
+    val animRankProg by animateFloatAsState(
+        targetValue   = rankProgress,
+        animationSpec = tween(700, easing = FastOutSlowInEasing),
+        label         = "rankProg"
+    )
+
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape    = GlassCard,
+        colors   = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.85f)
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp)
+        ) {
+            // Header: icon + category name + level badge
+            Row(
+                modifier              = Modifier.fillMaxWidth(),
+                verticalAlignment     = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Row(
+                    verticalAlignment     = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(36.dp)
+                            .clip(RoundedCornerShape(8.dp))
+                            .background(accent.copy(alpha = 0.15f)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector        = AppIcons.getCategoryIcon(category),
+                            contentDescription = null,
+                            tint               = accent,
+                            modifier           = Modifier.size(20.dp)
+                        )
+                    }
+                    Text(
+                        text       = category.name.lowercase().replaceFirstChar { it.uppercase() },
+                        style      = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+                // Level pill
+                Box(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(50))
+                        .background(accent.copy(alpha = 0.15f))
+                        .padding(horizontal = 10.dp, vertical = 4.dp)
+                ) {
+                    Text(
+                        text  = "Lv $categoryLevel",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = accent,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+            }
+
+            Spacer(Modifier.height(10.dp))
+
+            // Rank row
+            Row(
+                verticalAlignment     = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                Icon(
+                    imageVector        = AppIcons.getRankIcon(getCategoryRankLevel(tasksCompleted)),
+                    contentDescription = null,
+                    tint               = MaterialTheme.colorScheme.primary,
+                    modifier           = Modifier.size(16.dp)
+                )
+                Text(
+                    text  = rankInfo.displayName,
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.primary
+                )
+                Text(
+                    text  = "— ${rankInfo.description}",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.55f)
+                )
+            }
+
+            Spacer(Modifier.height(12.dp))
+
+            // XP bar
+            Row(
+                modifier              = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Text(
+                    "XP Progress",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                )
+                Text(
+                    "$categoryXp XP",
+                    style      = MaterialTheme.typography.labelSmall,
+                    color      = accent,
+                    fontWeight = FontWeight.SemiBold
+                )
+            }
+            Spacer(Modifier.height(4.dp))
+            LinearProgressIndicator(
+                progress  = { animXpProgress },
+                modifier  = Modifier
+                    .fillMaxWidth()
+                    .height(6.dp)
+                    .clip(RoundedCornerShape(50)),
+                color      = accent,
+                trackColor = accent.copy(alpha = 0.15f)
+            )
+
+            Spacer(Modifier.height(10.dp))
+
+            // Rank progress bar
+            val rankLevel   = getCategoryRankLevel(tasksCompleted)
+            val isMaxRank   = rankLevel == CategoryRankLevel.entries.last()
+            val nextRankLabel = if (!isMaxRank) {
+                val next = CategoryRankLevel.entries[rankLevel.ordinal + 1]
+                val needed = next.requiredTasks - tasksCompleted
+                "$needed tasks to ${next.name.lowercase().replaceFirstChar { it.uppercase() }}"
+            } else "Max rank achieved"
+
+            Row(
+                modifier              = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Text(
+                    "Rank Progress",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                )
+                Text(
+                    nextRankLabel,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.tertiary
+                )
+            }
+            Spacer(Modifier.height(4.dp))
+            LinearProgressIndicator(
+                progress  = { animRankProg },
+                modifier  = Modifier
+                    .fillMaxWidth()
+                    .height(6.dp)
+                    .clip(RoundedCornerShape(50)),
+                color      = MaterialTheme.colorScheme.tertiary,
+                trackColor = MaterialTheme.colorScheme.tertiary.copy(alpha = 0.15f)
+            )
+
+            Spacer(Modifier.height(6.dp))
+
+            Text(
+                "$tasksCompleted tasks completed",
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.45f)
+            )
+        }
+    }
+}
+
+private fun rankProgressFor(tasksCompleted: Int): Float {
+    val rankLevel = getCategoryRankLevel(tasksCompleted)
+    val isMax     = rankLevel == CategoryRankLevel.entries.last()
+    if (isMax) return 1f
+    val next          = CategoryRankLevel.entries[rankLevel.ordinal + 1]
+    val tasksNeeded   = next.requiredTasks - rankLevel.requiredTasks
+    val tasksProgress = tasksCompleted - rankLevel.requiredTasks
+    return (tasksProgress.toFloat() / tasksNeeded).coerceIn(0f, 1f)
+}
+
+private fun categoryAccentColor(category: TaskCategory): androidx.compose.ui.graphics.Color = when (category) {
+    TaskCategory.WORK     -> com.example.myapplication.ui.theme.CategoryWork
+    TaskCategory.STUDY    -> com.example.myapplication.ui.theme.CategoryStudy
+    TaskCategory.HEALTH   -> com.example.myapplication.ui.theme.CategoryHealth
+    TaskCategory.PERSONAL -> com.example.myapplication.ui.theme.CategoryPersonal
+    TaskCategory.SHOPPING -> com.example.myapplication.ui.theme.CategoryShopping
+    TaskCategory.OTHER    -> com.example.myapplication.ui.theme.CategoryOther
+}

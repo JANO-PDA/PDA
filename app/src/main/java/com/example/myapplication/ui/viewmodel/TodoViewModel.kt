@@ -11,10 +11,8 @@ import com.example.myapplication.data.models.calculateLevel
 import com.example.myapplication.data.models.NpcMessage
 import com.example.myapplication.data.repository.NpcRepository
 import android.content.Context
-import android.media.MediaPlayer
-import android.media.ToneGenerator
-import android.media.AudioManager
 import android.util.Log
+import com.example.myapplication.ui.theme.SoundManager
 import com.example.myapplication.notifications.AlarmScheduler
 import com.example.myapplication.notifications.NotificationHelper
 import kotlinx.coroutines.delay
@@ -63,6 +61,12 @@ class TodoViewModel : ViewModel() {
     private val _showConfetti = MutableStateFlow(false)
     val showConfetti: StateFlow<Boolean> = _showConfetti.asStateFlow()
 
+    // State for showing level-up Lottie overlay
+    private val _showLevelUp = MutableStateFlow(false)
+    val showLevelUp: StateFlow<Boolean> = _showLevelUp.asStateFlow()
+
+    fun dismissLevelUp() { _showLevelUp.value = false }
+
     // Track confetti position (to center on completed task)
     private val _confettiPosition = MutableStateFlow(Pair(0f, 0f))
     val confettiPosition: StateFlow<Pair<Float, Float>> = _confettiPosition.asStateFlow()
@@ -71,9 +75,9 @@ class TodoViewModel : ViewModel() {
     private val _lastCreatedTaskId = MutableStateFlow("")
     val lastCreatedTaskId: StateFlow<String> = _lastCreatedTaskId.asStateFlow()
 
-    // Application context for playing sounds
+    // Application context and sound manager
     private var appContext: Context? = null
-    private var completionSoundPlayer: MediaPlayer? = null
+    private var soundManager: SoundManager? = null
 
     // For notifications and alarms
     private lateinit var notificationHelper: NotificationHelper
@@ -89,6 +93,7 @@ class TodoViewModel : ViewModel() {
     fun initialize(context: Context) {
         try {
             appContext = context
+            soundManager = SoundManager(context)
 
             notificationHelper = NotificationHelper(context)
             notificationHelper.createNotificationChannels()
@@ -143,24 +148,19 @@ class TodoViewModel : ViewModel() {
     }
 
     private fun playCompletionSound() {
-        appContext?.let { context ->
-            try {
-                completionSoundPlayer?.release()
-                try {
-                    val rawClass = Class.forName("${context.packageName}.R\$raw")
-                    val taskCompleteField = rawClass.getDeclaredField("task_complete")
-                    val soundResourceId = taskCompleteField.getInt(null)
-                    completionSoundPlayer = MediaPlayer.create(context, soundResourceId)
-                    completionSoundPlayer?.setOnCompletionListener { it.release() }
-                    completionSoundPlayer?.start()
-                } catch (e: Exception) {
-                    android.media.ToneGenerator(android.media.AudioManager.STREAM_MUSIC, 100)
-                        .startTone(android.media.ToneGenerator.TONE_PROP_BEEP, 150)
-                }
-            } catch (e: Exception) {
-                e.printStackTrace()
-            }
-        }
+        soundManager?.playComplete()
+    }
+
+    fun playTapSound() {
+        soundManager?.playTap()
+    }
+
+    fun playSwipeSound() {
+        soundManager?.playSwipe()
+    }
+
+    fun playLevelUpSound() {
+        soundManager?.playLevelUp()
     }
 
     fun addTask(
@@ -242,9 +242,6 @@ class TodoViewModel : ViewModel() {
 
     fun showAddSubtaskDialog(parentTask: Task) {
         _addSubtaskFor.value = parentTask
-        subtaskTitleValue = ""
-        subtaskDescriptionValue = ""
-        subtaskDifficultyValue = TaskDifficulty.EASY
     }
 
     fun setAddSubtaskFor(task: Task) {
@@ -440,6 +437,7 @@ class TodoViewModel : ViewModel() {
     // Fix 2: XP unified — uses task.getXpReward() (10/25/50/100) everywhere
     private fun awardXpForTask(task: Task) {
         val xpGained = task.getXpReward()
+        val prevLevel = _userProfile.value.level
 
         _userProfile.update { currentProfile ->
             val newTotalXp = currentProfile.totalXp + xpGained
@@ -453,12 +451,18 @@ class TodoViewModel : ViewModel() {
                 totalXp = newTotalXp,
                 level = calculateLevel(newTotalXp),
                 categoryXp = newCategoryXp,
-                categoryTasksCompleted = newCategoryTasksDone
+                categoryTasksCompleted = newCategoryTasksDone,
+                categoryLevels = newCategoryXp.mapValues { (_, xp) -> calculateLevel(xp) }
             )
         }
 
         saveProfile()
         playCompletionSound()
+
+        if (_userProfile.value.level > prevLevel) {
+            _showLevelUp.value = true
+            playLevelUpSound()
+        }
     }
 
     private fun removeXpForTask(task: Task) {
@@ -538,6 +542,11 @@ class TodoViewModel : ViewModel() {
     fun setDarkMode(darkMode: Boolean?) {
         _userProfile.update { it.copy(darkMode = darkMode) }
         saveProfile()
+    }
+
+    override fun onCleared() {
+        super.onCleared()
+        soundManager?.release()
     }
 
     init {

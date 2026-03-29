@@ -1,77 +1,74 @@
-# Future Development Plans
+# PDA App — Roadmap
 
-## Animation System Roadmap
+*Updated: 2026-03-28*
 
-### Phase 1: Foundation (Current)
-- **Native Compose Animations**: Use built-in Compose animations for all UI feedback
-- **Performance Optimization**: Focus on ensuring animations are lightweight and non-blocking
-- **Consistent UX**: Ensure a uniform animation experience across the application
-- **Category-Specific Animations**: Current implementation includes a paper folding animation for "Study" tasks
+---
 
-### Phase 2: Enhanced Visual Feedback (Planned)
-- **Additional Category Animations**: Implement unique animations for each task category
-- **Task Completion Animations**: Add satisfaction-inducing animations when tasks are marked complete
-- **Refined Transitions**: Implement smoother transitions between app states and screens
-- **Loading Indicators**: Create themed loading animations for background operations
+## UI Rework (Current Sprint)
 
-### Phase 3: User Experience Improvements (Future)
-- **Ambient Animations**: Subtle background movements to enhance the post-apocalyptic atmosphere
-- **Interaction Feedback**: Micro-animations for buttons, sliders, and other interactive elements
-- **Animation Settings**: Allow users to control animation intensity or disable animations
+### Design System
+- Glassmorphism / frosted glass cards with translucent surfaces
+- Vault-themed dark palette: deep charcoal backgrounds, amber glow primary, teal secondary
+- Custom typography: Share Tech Mono (headings/monospace) + Inter (body)
+- Shape tokens for consistent rounded corners
 
-### Decision Notes
-- **Native Animations Over Libraries**: The decision to use native Compose animations instead of Lottie or other animation libraries prioritizes:
-  - Smaller App Size: No additional animation assets or libraries needed
-  - Maintainability: Simpler codebase with fewer dependencies to manage
-  - Performance: Reduced resource usage and simpler state management
-  - Consistency: Unified visual language across the application
-- **Category-Specific Animations**: Started with a paper folding/rotation effect for the "Study" category, with plans to expand to other categories.
+### Animation Libraries
+- **Lottie for Compose** — task complete celebration, level-up fanfare, empty-state idle
+- **Konfetti** — confetti burst on achievements and level-ups
+- **Compose SharedTransitionLayout** (built-in, BOM 2024.09) — shared element transitions
+- **Native Compose** — all micro-interactions (button press, card expand, list slide-in)
+- **Android SoundPool** — pop on tap, swoosh on swipe, chime on task complete
 
-## NPC Dialogue Enhancement Plan
+### Component Redesign
+- TaskItem: glass card with left category stripe, difficulty badge, swipe-to-complete/delete
+- NpcMessageItem: chat bubble style, avatar circle
+- MainScreen: compact ProfileStrip instead of large profile card, proper FAB
+- All screens: consistent vault theme with amber/teal accents
 
-### Phase 1: Expanded Static Content (Current)
-- **Diverse Dialogue Lines**: Added more varied conversation options for existing NPCs
-- **Character Development**: Expanded personality traits through dialogue
-- **Shopping Category Focus**: Enhanced dialogue for Grifter and Viktor "The Mule" NPCs
+---
 
-### Phase 2: Dynamic Content Generation (Planned)
-- **API Integration Research**: Investigate free tier options for AI dialogue generation
-  - Hugging Face Inference API (free tier)
-  - Google Gemini API (free tier with limitations)
-  - OpenAI API (limited free tier)
-- **Hybrid Approach**: Combine pre-written lines with API-generated content
-- **Offline Fallback**: Ensure app functions properly when API is unavailable
+## Bug Fixes (In Progress)
+- ❌ → ✅ categoryLevels recalculation in awardXpForTask()
+- ❌ → ✅ Sound system (SoundPool replacing ToneGenerator hack)
+- ⚠️ → ✅ NPC message persistence
+- ⚠️ → ✅ AnimatedBackground gradient coords
 
-### Phase 3: Advanced NPC Interaction (Future)
-- **Context-Aware Responses**: Dialogue that references user's task history and patterns
-- **Adaptive Personalities**: NPCs that evolve based on user interaction frequency
-- **Expandable NPC Roster**: System for introducing new characters with unique traits
+---
 
-## UI Enhancement Roadmap
+## Phase 3 — Post-Rework Features
 
-### Planned Improvements
-- **Task Button Positioning**: Completed repositioning of add task button beside "Active Tasks" header
-- **Dark Mode**: Full support for system and manual dark mode toggle
-- **Accessibility Enhancements**: Improve screen reader support and tap target sizes
-- **Responsive Layouts**: Better adaptation to different screen sizes and orientations
-- **Gesture Navigation**: Add swipe actions for common task operations
+### Gameplay Systems
+- Task streaks: weekly streak bonuses + streak shield items
+- Achievement system: first task, 7-day streak, category mastery milestones
+- Anomaly events: time-limited bonus XP challenges
+- Artifact system: passive bonuses earned from difficult tasks
 
-### Visual Design Evolution
-- **Refined Theme**: Enhance the post-apocalyptic visual identity
-- **Custom Iconography**: Develop a consistent icon set that fits the theme
-- **Typography Review**: Optimize readability while maintaining thematic elements
+### Navigation
+- Swipe gestures (in-progress as part of UI rework)
+- Visual calendar / timeline view
+- Kanban board option
 
-## Technical Roadmap
+### NPC System
+- NPC message persistence across app restarts
+- Context-aware responses (reference user's task history)
+- More NPCs and expanded dialogue
 
-### Architecture Improvements
-- **Modularization**: Break monolithic structure into feature modules
-- **Testing Coverage**: Expand unit and UI test coverage
-- **State Management**: Further refinement of state flow patterns
+---
 
-### Performance Goals
-- **Startup Time**: Optimize application launch experience
-- **Memory Usage**: Reduce overall memory footprint
-- **Battery Impact**: Minimize background processing requirements
-- **Dependencies**: Continue to minimize external dependencies where native solutions exist
+## Phase 4 — Long-Term
 
-*Last Updated: June 20, 2024* 
+- AI-generated NPC dialogue (Gemini API free tier, offline fallback)
+- Cloud sync (Firebase or custom backend)
+- Different PDA skins (STALKER, Fallout Pip-Boy, Cyberpunk)
+- Skill trees per category
+- Faction system
+- Widgets for home screen
+
+---
+
+## Architecture Goals
+- Room database to replace SharedPreferences (cleaner queries, relationships)
+- Repository layer with persistence for NPC messages
+- Navigation component to replace boolean-flag push navigation
+- Modularization into feature modules
+- Expand test coverage beyond current (none)

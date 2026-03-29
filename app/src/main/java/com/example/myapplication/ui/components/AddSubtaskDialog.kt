@@ -5,15 +5,11 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.example.myapplication.data.models.Task
 import com.example.myapplication.data.models.TaskDifficulty
-import com.example.myapplication.ui.viewmodel.subtaskTitleValue
-import com.example.myapplication.ui.viewmodel.subtaskDescriptionValue
-import com.example.myapplication.ui.viewmodel.subtaskDifficultyValue
 
 @Composable
 fun AddSubtaskDialog(
@@ -21,23 +17,10 @@ fun AddSubtaskDialog(
     onDismiss: () -> Unit,
     onAddSubtask: (String, String, TaskDifficulty) -> Unit
 ) {
-    var title by remember { mutableStateOf(subtaskTitleValue) }
-    var description by remember { mutableStateOf(subtaskDescriptionValue) }
-    var selectedDifficulty by remember { mutableStateOf(subtaskDifficultyValue) }
-    
-    // Update the shared values when the local state changes
-    LaunchedEffect(title) {
-        com.example.myapplication.ui.viewmodel.subtaskTitleValue = title
-    }
-    
-    LaunchedEffect(description) {
-        com.example.myapplication.ui.viewmodel.subtaskDescriptionValue = description
-    }
-    
-    LaunchedEffect(selectedDifficulty) {
-        com.example.myapplication.ui.viewmodel.subtaskDifficultyValue = selectedDifficulty
-    }
-    
+    var title             by remember { mutableStateOf("") }
+    var description       by remember { mutableStateOf("") }
+    var selectedDifficulty by remember { mutableStateOf(TaskDifficulty.MEDIUM) }
+
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text("Add Subtask") },
@@ -48,38 +31,39 @@ fun AddSubtaskDialog(
                     .padding(8.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                Text("Parent Task: ${parentTask.title}", style = MaterialTheme.typography.bodyMedium)
-                
+                Text("Parent: ${parentTask.title}", style = MaterialTheme.typography.bodyMedium)
+
                 OutlinedTextField(
-                    value = title,
+                    value       = title,
                     onValueChange = { title = it },
-                    label = { Text("Subtask Title") },
-                    modifier = Modifier.fillMaxWidth()
+                    label       = { Text("Subtask Title") },
+                    modifier    = Modifier.fillMaxWidth(),
+                    singleLine  = true
                 )
-                
+
                 OutlinedTextField(
-                    value = description,
+                    value       = description,
                     onValueChange = { description = it },
-                    label = { Text("Description (Optional)") },
-                    modifier = Modifier.fillMaxWidth(),
-                    minLines = 2
+                    label       = { Text("Description (Optional)") },
+                    modifier    = Modifier.fillMaxWidth(),
+                    minLines    = 2
                 )
-                
-                Text("Difficulty", style = MaterialTheme.typography.titleSmall)
+
+                Text("Difficulty", style = MaterialTheme.typography.labelLarge)
                 LazyColumn(
-                    modifier = Modifier
+                    modifier       = Modifier
                         .fillMaxWidth()
                         .height(120.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp),
-                    contentPadding = PaddingValues(vertical = 8.dp)
+                    verticalArrangement = Arrangement.spacedBy(6.dp),
+                    contentPadding = PaddingValues(vertical = 4.dp)
                 ) {
-                    items(TaskDifficulty.values()) { difficulty ->
+                    items(TaskDifficulty.entries) { difficulty ->
                         FilterChip(
                             selected = selectedDifficulty == difficulty,
-                            onClick = { selectedDifficulty = difficulty },
-                            label = { 
+                            onClick  = { selectedDifficulty = difficulty },
+                            label    = {
                                 Text(
-                                    text = difficulty.name,
+                                    text     = difficulty.name,
                                     textAlign = TextAlign.Center,
                                     modifier = Modifier.fillMaxWidth()
                                 )
@@ -92,20 +76,12 @@ fun AddSubtaskDialog(
         },
         confirmButton = {
             Button(
-                onClick = { 
-                    if (title.isNotBlank()) {
-                        onAddSubtask(title, description, selectedDifficulty)
-                    }
-                },
-                enabled = title.isNotBlank()
-            ) {
-                Text("Add Subtask")
-            }
+                onClick  = { if (title.isNotBlank()) onAddSubtask(title, description, selectedDifficulty) },
+                enabled  = title.isNotBlank()
+            ) { Text("Add") }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text("Cancel")
-            }
+            TextButton(onClick = onDismiss) { Text("Cancel") }
         }
     )
-} 
+}

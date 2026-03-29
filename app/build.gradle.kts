@@ -51,6 +51,13 @@ dependencies {
     implementation(libs.androidx.material3)
     implementation("androidx.compose.material:material-icons-extended")
     implementation("com.google.code.gson:gson:2.10.1")
+
+    // Animation libraries
+    implementation("com.airbnb.android:lottie-compose:6.4.0")
+    implementation("nl.dionsegijn:konfetti-compose:2.0.4")
+
+    // Google Fonts for Compose (version managed by BOM)
+    implementation("androidx.compose.ui:ui-text-google-fonts")
     
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)

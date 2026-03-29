@@ -1,114 +1,85 @@
-# PDA App Features Roadmap
+# PDA App — Feature Status
 
-## Core Features - Phase 1
-- [x] Basic task management
-- [x] Categories for tasks
-- [x] XP system for completed tasks
-- [x] User profile with level progression
-- [x] Theme customization
+*Audited: 2026-03-28 against actual source code*
 
-## In Progress - Phase 2
-- [x] Progress bars for each category
-- [x] Due dates and notifications for tasks
-- [x] Task completion rates per category
-- [x] Subtasks for complex goals
-- [x] Dark mode implementation (system, light, dark options)
+Legend: ✅ Working | ⚠️ Partially working | ❌ Broken/Missing
 
-## Planned - Phase 3
-- [ ] Different PDA skins (STALKER, Fallout Pip-Boy, Cyberpunk)
-- [ ] Link tasks together (complete one to unlock another)
-- [ ] Daily/weekly task streaks
-- [ ] Productivity trend graphs
+---
 
-## Future Enhancements - Phase 4
-- [ ] Special "anomaly" events with XP rewards
-- [ ] Inventory and Artifacts system
-  - [ ] Earn artifacts from completing difficult tasks
-  - [ ] Virtual inventory with passive bonuses
-- [ ] Achievement System
-  - [ ] Streak badges (7 days in a row)
-  - [ ] Category mastery milestones
-  - [ ] Special achievements
-- [ ] Faction system
-- [ ] Unlockable UI elements
-- [ ] Visual calendar for consistency tracking
-- [ ] Skill trees for each category
-- [ ] Special abilities at certain ranks
-- [ ] Time tracking for tasks in progress
-- [x] Push notifications for task deadlines
+## Phase 1 — Core Features
+- ✅ Basic task management (create, edit, delete, complete)
+- ✅ Task categories (WORK, STUDY, HEALTH, PERSONAL, SHOPPING, OTHER)
+- ✅ XP system for completed tasks (10/25/50/100 by difficulty)
+- ✅ User profile with level progression (exponential curve)
+- ✅ Theme customization (3 themes, persisted)
 
-# Future Enhancements for PDA App
+## Phase 2 — In Progress
+- ✅ Progress bars for each category (CategoryProgressScreen)
+- ✅ Due dates and time picker
+- ⚠️ Notifications — AlarmManager works but requires 2 runtime permissions (Android 12+/13+)
+- ✅ Task completion rates per category
+- ✅ Subtasks for complex goals
+- ✅ Dark mode (system default / light / dark — all 3 work)
+- ❌ Sound effects — ToneGenerator beep only; real sound resource missing
+
+## Phase 3 — Planned
+- ❌ Different PDA skins (STALKER, Pip-Boy, Cyberpunk)
+- ❌ Task linking (complete one to unlock another)
+- ✅ Daily/weekly task streaks (streak tracking implemented)
+- ❌ Productivity trend graphs
+
+## Phase 4 — Future Enhancements
+- ❌ Anomaly events with XP rewards
+- ❌ Inventory and Artifacts system
+- ❌ Achievement system (streak badges, category mastery)
+- ❌ Faction system
+- ❌ Unlockable UI elements
+- ❌ Visual calendar
+- ❌ Skill trees
+- ❌ Time tracking for tasks in progress
+
+---
 
 ## Navigation & Layout
-- [ ] Navigation Drawer for additional options and settings
-- [ ] Quick action floating buttons (FAB) with expandable sub-actions
-- [ ] Swipe gestures for task actions (complete, delete, edit)
-- [ ] Collapsible task groups by category or due date
-- [ ] Pull-to-refresh functionality
+- ✅ Navigation Drawer (ModalNavigationDrawer)
+- ❌ FAB with expandable sub-actions (button is inline, not FAB)
+- ❌ Swipe gestures for task actions
+- ❌ Collapsible task groups by due date
+- ❌ Pull-to-refresh
 
 ## Visual Feedback & Animations
-- [x] Task completion celebration animations (simple native animations)
-- [ ] Smooth transitions when expanding/collapsing subtasks
-- [x] Pulsating effects for urgent tasks
-- [x] Progress indicators for task completion within categories
-- [ ] Animated task priority indicators
+- ⚠️ Task completion celebration (basic Canvas confetti — works but rough)
+- ✅ Expand/collapse subtasks with AnimatedVisibility
+- ✅ Pulsating icon for overdue tasks (PulsatingIcon)
+- ✅ Category progress indicators
+- ❌ Animated task priority indicators
 
 ## Task Management Features
-- [ ] Task templates for frequently created tasks
-- [ ] Drag-and-drop task reordering
-- [ ] Task priority levels with visual indicators
-- [ ] Task tags or labels for better organization
-- [ ] Quick task creation with voice input
+- ✅ Task editing (AddTaskDialog with existingTask pre-fill)
+- ✅ Category-based filtering
+- ✅ Smart sorting (Default / Due Date / Difficulty)
+- ❌ Task templates
+- ❌ Drag-and-drop reordering
+- ❌ Task priority levels
 
 ## Visual Enhancements
-- [x] Custom task card designs based on category
-- [x] Dynamic color themes based on task priority or category
-- [ ] Progress rings around task items showing time remaining
-- [ ] Visual timeline view for upcoming tasks
-- [x] Custom icons for different task types
+- ⚠️ Custom task card designs (category color tint — subtle, not fully themed)
+- ✅ Category icons (Material Icons mapping)
+- ❌ Glassmorphism / frosted glass UI
+- ❌ Custom typography (uses system default font)
+- ❌ Vault-themed color palette (current: Material3 defaults recolored)
 
-## Interaction Improvements
-- [ ] Long-press actions for quick task operations
-- [ ] Double-tap to mark task as complete
-- [ ] Pinch-to-zoom for task details
-- [ ] Shake device to undo last action
-- [ ] Task grouping with expandable headers
+## Animations (Honest Status)
+- ⚠️ Task completion: basic Canvas confetti, no Lottie
+- ❌ NPC message arrival animation
+- ✅ Progress bars (animated via animateFloatAsState)
+- ❌ Screen transitions (no shared element transitions)
+- ✅ Category icon pulse for urgent tasks (PulsatingIcon)
 
-## Task Organization
-- [ ] Calendar view integration
-- [ ] Kanban board view option
-- [ ] Timeline view for task progression
-- [x] Category-based task filtering
-- [x] Smart task sorting (by priority, due date, etc.)
+---
 
-## Animation Improvements
-- [x] Task Completion: Simple native animations instead of confetti
-- [ ] NPC Messages: Add subtle animations when new messages arrive
-- [x] Progress Indicators: Animated, stylized progress bars for categories
-- [ ] Navigation Transitions: Screen transitions with themed effects
-- [x] Category Icons: Subtle animations for task category icons (pulsing for urgent tasks)
-
-## Implementation Notes
-- Each feature should be implemented while maintaining the PDA app theme
-- Consider performance impact for animations and visual effects
-- Ensure new features don't compromise the app's core functionality
-- Test thoroughly on different device sizes and orientations
-- Maintain consistent design language across new features
-
-## Priority Levels
-1. High Priority
-   - Navigation Drawer
-   - Task priority indicators
-   - Swipe gestures
-
-2. Medium Priority
-   - Visual feedback animations
-   - Task templates
-   - Category-based filtering
-
-3. Low Priority
-   - Voice input
-   - Shake to undo
-   - Pinch-to-zoom functionality
-
-_Note: This is a living document. Features can be added, modified, or reprioritized as needed._ 
+## Known Bugs
+- ❌ categoryLevels stuck at Level 1 in CategoryProgressScreen
+- ❌ Sound broken (missing raw resource, beep fallback)
+- ⚠️ NPC messages lost on app restart
+- ⚠️ AnimatedBackground gradient math incorrect

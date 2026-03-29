@@ -8,76 +8,74 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import com.example.myapplication.ui.theme.GlassWhite5
 
 /**
- * An animated gradient background that continuously shifts colors
+ * A very subtle animated radial-gradient background that shifts slowly.
+ * Uses a single alpha animation to keep battery usage minimal.
  */
 @Composable
 fun AnimatedBackground(
     modifier: Modifier = Modifier,
     content: @Composable () -> Unit
 ) {
-    val infiniteTransition = rememberInfiniteTransition(label = "backgroundAnimation")
-    
-    // Animate the primary color intensity
-    val primaryColorRatio by infiniteTransition.animateFloat(
-        initialValue = 0.7f,
-        targetValue = 1.0f,
+    val infiniteTransition = rememberInfiniteTransition(label = "bgAnim")
+
+    // Single slow alpha pulse — much lighter than the old 3-animation approach
+    val glowAlpha by infiniteTransition.animateFloat(
+        initialValue = 0.06f,
+        targetValue  = 0.14f,
         animationSpec = infiniteRepeatable(
-            animation = tween(durationMillis = 5000, easing = FastOutSlowInEasing),
-            repeatMode = RepeatMode.Reverse
+            animation   = tween(durationMillis = 6000, easing = FastOutSlowInEasing),
+            repeatMode  = RepeatMode.Reverse
         ),
-        label = "primaryColorRatio"
+        label = "glowAlpha"
     )
-    
-    // Animate the secondary color intensity
-    val secondaryColorRatio by infiniteTransition.animateFloat(
-        initialValue = 0.5f,
-        targetValue = 0.8f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(durationMillis = 7000, easing = FastOutSlowInEasing),
-            repeatMode = RepeatMode.Reverse
-        ),
-        label = "secondaryColorRatio"
-    )
-    
-    // Animate the gradient angle
-    val angle by infiniteTransition.animateFloat(
-        initialValue = 0f,
-        targetValue = 360f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(durationMillis = 30000, easing = LinearEasing)
-        ),
-        label = "gradientAngle"
-    )
-    
-    // Get colors from theme and create animated variants
+
     val primaryColor = MaterialTheme.colorScheme.primary
-    val secondaryColor = MaterialTheme.colorScheme.tertiary
-    val backgroundColor = MaterialTheme.colorScheme.background
-    
-    val animatedPrimary = primaryColor.copy(alpha = 0.1f * primaryColorRatio)
-    val animatedSecondary = secondaryColor.copy(alpha = 0.1f * secondaryColorRatio)
-    
-    // Calculate gradient start and end points based on angle
-    val angleInRadians = Math.toRadians(angle.toDouble())
-    val gradientX = kotlin.math.cos(angleInRadians).toFloat()
-    val gradientY = kotlin.math.sin(angleInRadians).toFloat()
-    
-    // Create animated gradient brush
-    val gradientBrush = Brush.linearGradient(
-        colors = listOf(backgroundColor, animatedPrimary, animatedSecondary, backgroundColor),
-        start = androidx.compose.ui.geometry.Offset(0.5f - gradientX/2, 0.5f - gradientY/2),
-        end = androidx.compose.ui.geometry.Offset(0.5f + gradientX/2, 0.5f + gradientY/2)
-    )
-    
+    val secondaryColor = MaterialTheme.colorScheme.secondary
+    val bgColor = MaterialTheme.colorScheme.background
+
     Box(
         modifier = modifier
             .fillMaxSize()
-            .background(gradientBrush)
+            .drawBehind {
+                // Solid background
+                drawRect(bgColor)
+
+                // Top-left primary glow
+                drawCircle(
+                    brush = Brush.radialGradient(
+                        colors = listOf(
+                            primaryColor.copy(alpha = glowAlpha),
+                            Color.Transparent
+                        ),
+                        center = Offset(size.width * 0.15f, size.height * 0.1f),
+                        radius = size.width * 0.6f
+                    ),
+                    radius = size.width * 0.6f,
+                    center = Offset(size.width * 0.15f, size.height * 0.1f)
+                )
+
+                // Bottom-right secondary glow
+                drawCircle(
+                    brush = Brush.radialGradient(
+                        colors = listOf(
+                            secondaryColor.copy(alpha = glowAlpha * 0.7f),
+                            Color.Transparent
+                        ),
+                        center = Offset(size.width * 0.85f, size.height * 0.85f),
+                        radius = size.width * 0.5f
+                    ),
+                    radius = size.width * 0.5f,
+                    center = Offset(size.width * 0.85f, size.height * 0.85f)
+                )
+            }
     ) {
         content()
     }
-} 
+}

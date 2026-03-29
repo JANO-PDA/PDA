@@ -1,45 +1,42 @@
 package com.example.myapplication.ui.screens
 
-import androidx.compose.foundation.clickable
+import androidx.compose.animation.*
+import androidx.compose.animation.core.*
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.*
-import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.automirrored.filled.Message
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
-import androidx.compose.material3.DrawerValue
-import androidx.compose.material3.rememberDrawerState
-import androidx.compose.material3.ModalNavigationDrawer
-import androidx.compose.material3.ModalDrawerSheet
-import androidx.compose.material3.NavigationDrawerItem
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.unit.dp
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.draw.scale
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.foundation.gestures.detectHorizontalDragGestures
-import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.example.myapplication.data.models.*
 import com.example.myapplication.ui.components.*
-import com.example.myapplication.ui.theme.AppIcons
-import com.example.myapplication.ui.viewmodel.*
+import com.example.myapplication.ui.theme.*
+import com.example.myapplication.ui.viewmodel.TodoViewModel
 import kotlinx.coroutines.launch
-import com.example.myapplication.ui.components.AnimatedBackground
-import com.example.myapplication.ui.components.FloatingElement
-import com.example.myapplication.ui.components.PulsatingIcon
-import kotlin.random.Random
-import java.util.Date
-import kotlin.comparisons.compareByDescending
+import kotlin.math.roundToInt
 
-// Fix 7: Sort order enum
 enum class SortOrder(val label: String) {
     DEFAULT("Default"),
     DUE_DATE("Due Date"),
@@ -49,68 +46,40 @@ enum class SortOrder(val label: String) {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MainScreen(viewModel: TodoViewModel) {
-    val tasks by viewModel.tasks.collectAsState()
-    val userProfile by viewModel.userProfile.collectAsState()
-    val categoryStats by viewModel.categoryStats.collectAsState()
-
-    var showAddTaskDialog by rememberSaveable { mutableStateOf(false) }
-    var showCompletedTasks by rememberSaveable { mutableStateOf(false) }
-    var showCategoryProgress by rememberSaveable { mutableStateOf(false) }
-    var showContactsScreen by rememberSaveable { mutableStateOf(false) }
-    var showSettingsScreen by rememberSaveable { mutableStateOf(false) }
-
-    val showConfetti by viewModel.showConfetti.collectAsState()
-    val npcMessages by viewModel.npcMessages.collectAsState()
-
+    val tasks         by viewModel.tasks.collectAsState()
+    val userProfile   by viewModel.userProfile.collectAsState()
+    val showConfetti  by viewModel.showConfetti.collectAsState()
+    val showLevelUp   by viewModel.showLevelUp.collectAsState()
     val addSubtaskFor by viewModel.addSubtaskFor.collectAsState()
-    var showAddSubtaskDialog by remember { mutableStateOf(false) }
 
-    // Fix 6: Category filter state
+    var showAddTaskDialog    by rememberSaveable { mutableStateOf(false) }
+    var showCompletedTasks   by rememberSaveable { mutableStateOf(false) }
+    var showCategoryProgress by rememberSaveable { mutableStateOf(false) }
+    var showContactsScreen   by rememberSaveable { mutableStateOf(false) }
+    var showSettingsScreen   by rememberSaveable { mutableStateOf(false) }
+
     var selectedCategory by remember { mutableStateOf<TaskCategory?>(null) }
+    var sortOrder        by remember { mutableStateOf(SortOrder.DEFAULT) }
+    var showSortMenu     by remember { mutableStateOf(false) }
+    var editingTask      by remember { mutableStateOf<Task?>(null) }
 
-    // Fix 7: Sort order state
-    var sortOrder by remember { mutableStateOf(SortOrder.DEFAULT) }
-    var showSortMenu by remember { mutableStateOf(false) }
+    val drawerState  = rememberDrawerState(DrawerValue.Closed)
+    val scope        = rememberCoroutineScope()
+    val isDrawerOpen by remember { derivedStateOf { drawerState.currentValue == DrawerValue.Open } }
+    val haptic       = LocalHapticFeedback.current
 
-    // Fix 9: Task editing state
-    var editingTask by remember { mutableStateOf<Task?>(null) }
+    // Sub-screen routing
+    if (showContactsScreen)   { ContactsScreen(viewModel,        onNavigateBack = { showContactsScreen   = false }); return }
+    if (showCompletedTasks)   { CompletedTasksScreen(viewModel,  onNavigateBack = { showCompletedTasks   = false }); return }
+    if (showCategoryProgress) { CategoryProgressScreen(viewModel,onNavigateBack = { showCategoryProgress = false }); return }
+    if (showSettingsScreen)   { SettingsScreen(viewModel,        onNavigateBack = { showSettingsScreen   = false }); return }
 
-    val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
-    val scope = rememberCoroutineScope()
-    val isDrawerOpen = remember { derivedStateOf { drawerState.currentValue == DrawerValue.Open } }
+    val topLevelActive = tasks.filter { it.parentTaskId == null && !it.isCompleted }
+    val subtaskMap     = tasks.filter { it.parentTaskId != null }.groupBy { it.parentTaskId!! }
 
-    LaunchedEffect(addSubtaskFor) {
-        showAddSubtaskDialog = addSubtaskFor != null
-    }
-
-    if (showContactsScreen) {
-        ContactsScreen(viewModel = viewModel, onNavigateBack = { showContactsScreen = false })
-        return
-    }
-    if (showCompletedTasks) {
-        CompletedTasksScreen(viewModel = viewModel, onNavigateBack = { showCompletedTasks = false })
-        return
-    }
-    if (showCategoryProgress) {
-        CategoryProgressScreen(viewModel = viewModel, onNavigateBack = { showCategoryProgress = false })
-        return
-    }
-    if (showSettingsScreen) {
-        SettingsScreen(viewModel = viewModel, onNavigateBack = { showSettingsScreen = false })
-        return
-    }
-
-    val topLevelTasks = tasks.filter { it.parentTaskId == null }
-    val topLevelActiveTasks = topLevelTasks.filter { !it.isCompleted }
-    val subtaskMap = tasks.filter { it.parentTaskId != null }.groupBy { it.parentTaskId!! }
-
-    // Fix 6: apply category filter
     val filteredTasks = if (selectedCategory != null)
-        topLevelActiveTasks.filter { it.category == selectedCategory }
-    else
-        topLevelActiveTasks
+        topLevelActive.filter { it.category == selectedCategory } else topLevelActive
 
-    // Fix 7: apply sort order
     val displayTasks = when (sortOrder) {
         SortOrder.DEFAULT    -> filteredTasks
         SortOrder.DUE_DATE   -> filteredTasks.sortedWith(compareBy(nullsLast()) { it.dueDate })
@@ -118,436 +87,552 @@ fun MainScreen(viewModel: TodoViewModel) {
     }
 
     ModalNavigationDrawer(
-        drawerState = drawerState,
+        drawerState   = drawerState,
         drawerContent = {
-            ModalDrawerSheet {
-                Spacer(modifier = Modifier.height(24.dp))
-
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 16.dp, vertical = 8.dp),
-                    horizontalAlignment = Alignment.Start
-                ) {
-                    Text(
-                        text = "PDA Menu",
-                        style = MaterialTheme.typography.headlineSmall,
-                        fontWeight = FontWeight.Bold
-                    )
-                }
-
-                Divider(modifier = Modifier.padding(vertical = 8.dp))
-
-                NavigationDrawerItem(
-                    icon = { Icon(Icons.Default.CheckCircle, contentDescription = "Completed Tasks") },
-                    label = { Text("Completed Tasks") },
-                    badge = {
-                        val completedCount = tasks.count { it.isCompleted }
-                        if (completedCount > 0) Badge { Text(completedCount.toString()) }
-                    },
-                    selected = false,
-                    onClick = {
-                        scope.launch {
-                            drawerState.close()
-                            showCompletedTasks = true
-                        }
-                    },
-                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)
+            ModalDrawerSheet(modifier = Modifier.width(280.dp)) {
+                Spacer(Modifier.height(24.dp))
+                Text(
+                    "PDA",
+                    style      = MaterialTheme.typography.headlineMedium,
+                    fontWeight = FontWeight.Bold,
+                    modifier   = Modifier.padding(horizontal = 24.dp)
                 )
-
-                NavigationDrawerItem(
-                    icon = { Icon(Icons.Default.Analytics, contentDescription = "Category Statistics") },
-                    label = { Text("Category Statistics") },
-                    selected = false,
-                    onClick = {
-                        scope.launch {
-                            drawerState.close()
-                            showCategoryProgress = true
-                        }
-                    },
-                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)
+                Text(
+                    "Personal Device Assistant",
+                    style    = MaterialTheme.typography.bodySmall,
+                    color    = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
+                    modifier = Modifier.padding(horizontal = 24.dp)
                 )
-
+                Spacer(Modifier.height(16.dp))
+                HorizontalDivider()
+                Spacer(Modifier.height(8.dp))
                 NavigationDrawerItem(
-                    icon = { Icon(Icons.Default.Settings, contentDescription = "Settings") },
-                    label = { Text("Settings") },
-                    selected = false,
-                    onClick = {
-                        scope.launch {
-                            drawerState.close()
-                            showSettingsScreen = true
-                        }
+                    icon     = { Icon(Icons.Default.CheckCircle, null) },
+                    label    = { Text("Completed Tasks") },
+                    badge    = {
+                        val n = tasks.count { it.isCompleted }
+                        if (n > 0) Badge { Text(n.toString()) }
                     },
-                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)
+                    selected = false,
+                    onClick  = { scope.launch { drawerState.close(); showCompletedTasks = true } },
+                    modifier = Modifier.padding(horizontal = 12.dp)
+                )
+                NavigationDrawerItem(
+                    icon     = { Icon(Icons.Default.Analytics, null) },
+                    label    = { Text("Category Stats") },
+                    selected = false,
+                    onClick  = { scope.launch { drawerState.close(); showCategoryProgress = true } },
+                    modifier = Modifier.padding(horizontal = 12.dp)
+                )
+                NavigationDrawerItem(
+                    icon     = { Icon(Icons.Default.Settings, null) },
+                    label    = { Text("Settings") },
+                    selected = false,
+                    onClick  = { scope.launch { drawerState.close(); showSettingsScreen = true } },
+                    modifier = Modifier.padding(horizontal = 12.dp)
                 )
             }
         }
     ) {
-        // Fix 5: AnimatedBackground wraps the entire main content area
         AnimatedBackground {
             Scaffold(
+                containerColor = MaterialTheme.colorScheme.background.copy(alpha = 0f),
                 topBar = {
                     TopAppBar(
-                        title = { Text("Tasks") },
+                        title  = { Text("Tasks", style = MaterialTheme.typography.headlineSmall) },
                         colors = TopAppBarDefaults.topAppBarColors(
-                            containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.9f),
-                            titleContentColor = MaterialTheme.colorScheme.onSurface
+                            containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.92f)
                         ),
                         navigationIcon = {
-                            if (!isDrawerOpen.value) {
+                            if (!isDrawerOpen) {
                                 IconButton(onClick = { scope.launch { drawerState.open() } }) {
-                                    Icon(Icons.Default.Menu, contentDescription = "Menu")
+                                    Icon(Icons.Default.Menu, "Menu")
                                 }
                             }
                         },
                         actions = {
                             IconButton(onClick = { showContactsScreen = true }) {
-                                BadgedBox(
-                                    badge = {
-                                        if (viewModel.getUnreadMessageCount() > 0) {
-                                            Badge { Text(viewModel.getUnreadMessageCount().toString()) }
-                                        }
-                                    }
-                                ) {
-                                    Icon(Icons.AutoMirrored.Filled.Message, contentDescription = "Messages")
+                                BadgedBox(badge = {
+                                    val n = viewModel.getUnreadMessageCount()
+                                    if (n > 0) Badge { Text(n.toString()) }
+                                }) {
+                                    Icon(Icons.AutoMirrored.Filled.Message, "Messages")
                                 }
                             }
                         }
                     )
                 },
-                floatingActionButton = { },
-                containerColor = MaterialTheme.colorScheme.background.copy(alpha = 0f) // transparent so AnimatedBackground shows
-            ) { paddingValues ->
+                floatingActionButton = {
+                    ExtendedFloatingActionButton(
+                        onClick = {
+                            showAddTaskDialog = true
+                            viewModel.playTapSound()
+                            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                        },
+                        icon           = { Icon(Icons.Default.Add, null) },
+                        text           = { Text("Add Task") },
+                        shape          = GlassPill,
+                        containerColor = MaterialTheme.colorScheme.primary,
+                        contentColor   = MaterialTheme.colorScheme.onPrimary
+                    )
+                }
+            ) { padding ->
                 Column(
                     modifier = Modifier
                         .fillMaxSize()
-                        .padding(paddingValues)
+                        .padding(padding)
                         .padding(horizontal = 16.dp)
                 ) {
-                    Spacer(modifier = Modifier.height(16.dp))
+                    Spacer(Modifier.height(12.dp))
 
-                    // User Profile Card
-                    Card(
-                        modifier = Modifier.fillMaxWidth(),
-                        colors = CardDefaults.cardColors(
-                            containerColor = MaterialTheme.colorScheme.surfaceVariant,
-                            contentColor = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    ) {
-                        Column(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(16.dp)
-                        ) {
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                modifier = Modifier.fillMaxWidth()
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.Star,
-                                    contentDescription = "User Profile",
-                                    tint = MaterialTheme.colorScheme.primary,
-                                    modifier = Modifier.requiredSize(24.dp)
-                                )
-                                Spacer(modifier = Modifier.width(8.dp))
-                                Text(text = "User Profile", style = MaterialTheme.typography.titleLarge)
-                            }
+                    GamerIDCard(userProfile = userProfile)
 
-                            Spacer(modifier = Modifier.height(16.dp))
+                    Spacer(Modifier.height(16.dp))
 
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceBetween
-                            ) {
-                                Text(text = "Level:", style = MaterialTheme.typography.bodyLarge)
-                                Text(
-                                    text = userProfile.level.toString(),
-                                    style = MaterialTheme.typography.bodyLarge,
-                                    fontWeight = FontWeight.Bold
-                                )
-                            }
-
-                            Spacer(modifier = Modifier.height(8.dp))
-
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceBetween
-                            ) {
-                                Text(text = "Total XP:", style = MaterialTheme.typography.bodyLarge)
-                                Text(
-                                    text = userProfile.totalXp.toString(),
-                                    style = MaterialTheme.typography.bodyLarge,
-                                    fontWeight = FontWeight.Bold
-                                )
-                            }
-
-                            // Streak display
-                            if (userProfile.taskStreak > 0) {
-                                Spacer(modifier = Modifier.height(8.dp))
-                                Row(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    horizontalArrangement = Arrangement.SpaceBetween
-                                ) {
-                                    Text(text = "Streak:", style = MaterialTheme.typography.bodyLarge)
-                                    Text(
-                                        text = "${userProfile.taskStreak} day${if (userProfile.taskStreak != 1) "s" else ""}",
-                                        style = MaterialTheme.typography.bodyLarge,
-                                        fontWeight = FontWeight.Bold,
-                                        color = MaterialTheme.colorScheme.tertiary
-                                    )
-                                }
-                            }
-
-                            Spacer(modifier = Modifier.height(16.dp))
-
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                modifier = Modifier.fillMaxWidth()
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.Star,
-                                    contentDescription = "XP Progress",
-                                    tint = MaterialTheme.colorScheme.primary,
-                                    modifier = Modifier.requiredSize(24.dp)
-                                )
-                                Spacer(modifier = Modifier.width(8.dp))
-                                Text(text = "XP Progress", style = MaterialTheme.typography.titleMedium)
-                            }
-
-                            Spacer(modifier = Modifier.height(8.dp))
-
-                            val progress = calculateProgressToNextLevel(userProfile.totalXp)
-                            val xpForNextLevel = calculateXpForNextLevel(userProfile.totalXp)
-                            val xpNeeded = xpForNextLevel - userProfile.totalXp
-
-                            LinearProgressIndicator(
-                                progress = { progress },
-                                modifier = Modifier.fillMaxWidth().height(8.dp),
-                                color = MaterialTheme.colorScheme.primary,
-                                trackColor = MaterialTheme.colorScheme.primaryContainer
-                            )
-
-                            Spacer(modifier = Modifier.height(8.dp))
-
-                            Text(
-                                text = "$xpNeeded XP to Level ${userProfile.level + 1}",
-                                style = MaterialTheme.typography.titleLarge,
-                                color = MaterialTheme.colorScheme.primary,
-                                fontWeight = FontWeight.Bold,
-                                modifier = Modifier.align(Alignment.CenterHorizontally)
-                            )
-
-                            Spacer(modifier = Modifier.height(4.dp))
-
-                            Text(
-                                text = "XP to next level: $xpNeeded",
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.primary,
-                                modifier = Modifier.align(Alignment.CenterHorizontally)
-                            )
-                        }
-                    }
-
-                    Spacer(modifier = Modifier.height(24.dp))
-
-                    // Active Tasks header with Add + Sort buttons
                     Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        verticalAlignment = Alignment.CenterVertically,
+                        modifier              = Modifier.fillMaxWidth(),
+                        verticalAlignment     = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
                         Text(
-                            text = "Active Tasks",
-                            style = MaterialTheme.typography.headlineMedium,
+                            "Active Tasks",
+                            style      = MaterialTheme.typography.headlineSmall,
                             fontWeight = FontWeight.Bold
                         )
-
-                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            // Fix 7: Sort button with dropdown
-                            Box {
-                                IconButton(onClick = { showSortMenu = true }) {
-                                    Icon(Icons.Default.Sort, contentDescription = "Sort tasks")
-                                }
-                                DropdownMenu(
-                                    expanded = showSortMenu,
-                                    onDismissRequest = { showSortMenu = false }
-                                ) {
-                                    SortOrder.values().forEach { order ->
-                                        DropdownMenuItem(
-                                            text = {
-                                                Text(
-                                                    text = order.label,
-                                                    fontWeight = if (sortOrder == order) FontWeight.Bold else FontWeight.Normal
-                                                )
-                                            },
-                                            onClick = {
-                                                sortOrder = order
-                                                showSortMenu = false
-                                            }
-                                        )
-                                    }
-                                }
+                        Box {
+                            IconButton(onClick = { showSortMenu = true }) {
+                                Icon(Icons.Default.Sort, "Sort")
                             }
-
-                            Button(
-                                onClick = { showAddTaskDialog = true },
-                                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp)
+                            DropdownMenu(
+                                expanded         = showSortMenu,
+                                onDismissRequest = { showSortMenu = false }
                             ) {
-                                Icon(Icons.Default.Add, contentDescription = "Add Task", modifier = Modifier.size(18.dp))
-                                Spacer(modifier = Modifier.width(4.dp))
-                                Text("Add Task")
+                                SortOrder.entries.forEach { order ->
+                                    DropdownMenuItem(
+                                        text = {
+                                            Text(
+                                                order.label,
+                                                fontWeight = if (sortOrder == order) FontWeight.Bold else FontWeight.Normal
+                                            )
+                                        },
+                                        onClick = { sortOrder = order; showSortMenu = false }
+                                    )
+                                }
                             }
                         }
                     }
 
-                    Spacer(modifier = Modifier.height(8.dp))
+                    Spacer(Modifier.height(8.dp))
 
-                    // Fix 6: Category filter chips (horizontally scrollable)
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
                             .horizontalScroll(rememberScrollState()),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
                     ) {
                         FilterChip(
                             selected = selectedCategory == null,
-                            onClick = { selectedCategory = null },
-                            label = { Text("All") }
+                            onClick  = { selectedCategory = null },
+                            label    = { Text("All") },
+                            shape    = GlassPill
                         )
-                        TaskCategory.values().forEach { category ->
+                        TaskCategory.entries.forEach { cat ->
                             FilterChip(
-                                selected = selectedCategory == category,
-                                onClick = {
-                                    selectedCategory = if (selectedCategory == category) null else category
-                                },
-                                label = {
+                                selected = selectedCategory == cat,
+                                onClick  = { selectedCategory = if (selectedCategory == cat) null else cat },
+                                label    = {
                                     Row(
-                                        verticalAlignment = Alignment.CenterVertically,
+                                        verticalAlignment     = Alignment.CenterVertically,
                                         horizontalArrangement = Arrangement.spacedBy(4.dp)
                                     ) {
-                                        Icon(
-                                            imageVector = AppIcons.getCategoryIcon(category),
-                                            contentDescription = null,
-                                            modifier = Modifier.size(14.dp)
-                                        )
-                                        Text(category.name.lowercase().replaceFirstChar { it.uppercase() })
+                                        Icon(AppIcons.getCategoryIcon(cat), null, Modifier.size(12.dp))
+                                        Text(cat.name.lowercase().replaceFirstChar { it.uppercase() })
                                     }
-                                }
+                                },
+                                shape = GlassPill
                             )
                         }
                     }
 
-                    Spacer(modifier = Modifier.height(8.dp))
+                    Spacer(Modifier.height(8.dp))
 
-                    // Task list or empty state
                     if (displayTasks.isEmpty()) {
                         Box(
-                            modifier = Modifier.fillMaxWidth().weight(1f),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .weight(1f)
+                                .padding(bottom = 88.dp),
                             contentAlignment = Alignment.Center
                         ) {
-                            Column(
-                                horizontalAlignment = Alignment.CenterHorizontally,
-                                verticalArrangement = Arrangement.Center
-                            ) {
-                                Text(
-                                    text = if (selectedCategory != null) "No ${selectedCategory!!.name.lowercase()} tasks" else "No active tasks",
-                                    style = MaterialTheme.typography.titleMedium,
-                                    color = MaterialTheme.colorScheme.onSurface
-                                )
-                                Spacer(modifier = Modifier.height(8.dp))
-                                Text(
-                                    text = "Tap the Add Task button to add a new task",
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
-                                )
-                            }
+                            VaultEmptyState(
+                                selectedCategory = selectedCategory,
+                                onAddTask        = { showAddTaskDialog = true }
+                            )
                         }
                     } else {
                         TaskList(
-                            tasks = displayTasks,
-                            subtaskMap = subtaskMap,
-                            onTaskClick = { task -> viewModel.highlightTask(task.id) },
-                            onTaskComplete = { task -> viewModel.completeTask(task) },
-                            onAddSubtask = { task -> viewModel.setAddSubtaskFor(task) },
-                            onTaskEdit = { task -> editingTask = task },  // Fix 9
-                            viewModel = viewModel
+                            tasks          = displayTasks,
+                            subtaskMap     = subtaskMap,
+                            onTaskClick    = { viewModel.highlightTask(it.id) },
+                            onTaskComplete = { viewModel.completeTask(it) },
+                            onAddSubtask   = { viewModel.setAddSubtaskFor(it) },
+                            onTaskEdit     = { editingTask = it },
+                            viewModel      = viewModel,
+                            modifier       = Modifier
+                                .weight(1f)
+                                .padding(bottom = 88.dp)
                         )
                     }
                 }
             }
 
-            // Fix 3: Confetti animation re-enabled
-            if (showConfetti) {
-                ConfettiAnimation(numConfetti = 100)
-            }
+            if (showConfetti) ConfettiAnimation()
+            LevelUpOverlay(visible = showLevelUp) { viewModel.dismissLevelUp() }
         }
     }
 
-    // Add task dialog
+    // Dialogs / sheets
     if (showAddTaskDialog) {
         AddTaskDialog(
-            onDismiss = { showAddTaskDialog = false },
-            onAddTask = { title, description, difficulty, category, dueDate, dueTime, hasReminder ->
-                viewModel.addTask(title, description, difficulty, category, dueDate, dueTime, hasReminder)
+            onDismiss   = { showAddTaskDialog = false },
+            onAddTask   = { title, desc, diff, cat, date, time, reminder ->
+                viewModel.addTask(title, desc, diff, cat, date, time, reminder)
                 showAddTaskDialog = false
-            }
+            },
+            onTapSound  = { viewModel.playTapSound() },
+            onOpenSound = { viewModel.playSwipeSound() }
         )
     }
 
-    // Fix 9: Edit task dialog
     editingTask?.let { task ->
         AddTaskDialog(
             existingTask = task,
-            onDismiss = { editingTask = null },
-            onAddTask = { title, description, difficulty, category, dueDate, dueTime, hasReminder ->
+            onDismiss    = { editingTask = null },
+            onAddTask    = { title, desc, diff, cat, date, time, reminder ->
                 viewModel.updateTask(
                     task.copy(
-                        title = title,
-                        description = description,
-                        difficulty = difficulty,
-                        category = category,
-                        dueDate = dueDate,
-                        dueTime = dueTime,
-                        hasReminder = hasReminder
+                        title = title, description = desc, difficulty = diff,
+                        category = cat, dueDate = date, dueTime = time, hasReminder = reminder
                     )
                 )
                 editingTask = null
-            }
+            },
+            onTapSound  = { viewModel.playTapSound() },
+            onOpenSound = { viewModel.playSwipeSound() }
         )
     }
 
-    if (showAddSubtaskDialog && addSubtaskFor != null) {
+    if (addSubtaskFor != null) {
         AddSubtaskDialog(
-            parentTask = addSubtaskFor!!,
-            onDismiss = { viewModel.dismissAddSubtaskDialog() },
-            onAddSubtask = { subtaskTitleValue, subtaskDescriptionValue, subtaskDifficultyValue ->
-                viewModel.addSubtask(
-                    parentTaskId = addSubtaskFor!!.id,
-                    title = subtaskTitleValue,
-                    description = subtaskDescriptionValue,
-                    difficulty = subtaskDifficultyValue
-                )
+            parentTask   = addSubtaskFor!!,
+            onDismiss    = { viewModel.dismissAddSubtaskDialog() },
+            onAddSubtask = { t, d, diff ->
+                viewModel.addSubtask(addSubtaskFor!!.id, t, d, diff)
                 viewModel.dismissAddSubtaskDialog()
             }
         )
     }
 }
 
-private fun formatTimestamp(timestamp: Long): String {
-    val now = System.currentTimeMillis()
-    val diffMillis = now - timestamp
-    return when {
-        diffMillis < 60000   -> "Just now"
-        diffMillis < 3600000 -> "${(diffMillis / 60000).toInt()}m ago"
-        diffMillis < 86400000 -> "${(diffMillis / 3600000).toInt()}h ago"
-        else                 -> "${(diffMillis / 86400000).toInt()}d ago"
+// ─── Gamer ID Card ─────────────────────────────────────────────────────────────
+@Composable
+private fun GamerIDCard(userProfile: UserProfile) {
+    val infiniteTransition = rememberInfiniteTransition(label = "gamerCard")
+
+    val primary   = MaterialTheme.colorScheme.primary
+    val secondary = MaterialTheme.colorScheme.secondary
+    val tertiary  = MaterialTheme.colorScheme.tertiary
+    val error     = MaterialTheme.colorScheme.error
+    val onSurface = MaterialTheme.colorScheme.onSurface
+    val density   = LocalDensity.current
+
+    // ── Streak-at-risk detection ───────────────────────────────────────────
+    val streakAtRisk = remember(userProfile.lastCompletedTaskDate, userProfile.taskStreak) {
+        if (userProfile.taskStreak <= 0) false
+        else {
+            val lastMs = userProfile.lastCompletedTaskDate ?: return@remember true
+            val cal     = java.util.Calendar.getInstance()
+            val todayCal = java.util.Calendar.getInstance()
+            cal.timeInMillis = lastMs
+            !(cal.get(java.util.Calendar.DAY_OF_YEAR) == todayCal.get(java.util.Calendar.DAY_OF_YEAR) &&
+              cal.get(java.util.Calendar.YEAR) == todayCal.get(java.util.Calendar.YEAR))
+        }
+    }
+
+    // ── Badge border glow pulse ────────────────────────────────────────────
+    val badgeGlow by infiniteTransition.animateColor(
+        initialValue  = primary.copy(alpha = 0.4f),
+        targetValue   = primary,
+        animationSpec = infiniteRepeatable(tween(1800, easing = FastOutSlowInEasing), RepeatMode.Reverse),
+        label         = "badgeGlow"
+    )
+
+    // ── CRT scan line (0→1 = top to bottom) ───────────────────────────────
+    val scanY by infiniteTransition.animateFloat(
+        initialValue  = 0f,
+        targetValue   = 1f,
+        animationSpec = infiniteRepeatable(tween(2200, easing = LinearEasing), RepeatMode.Restart),
+        label         = "scanY"
+    )
+
+    // ── XP bar shimmer ─────────────────────────────────────────────────────
+    val shimmerPos by infiniteTransition.animateFloat(
+        initialValue  = -1f,
+        targetValue   = 2f,
+        animationSpec = infiniteRepeatable(tween(2500, easing = LinearEasing), RepeatMode.Restart),
+        label         = "shimmer"
+    )
+
+    // ── Animated XP bar progress ───────────────────────────────────────────
+    val xpProgress   = calculateProgressToNextLevel(userProfile.totalXp)
+    val animXpFill by animateFloatAsState(
+        targetValue   = xpProgress,
+        animationSpec = tween(1200, easing = FastOutSlowInEasing),
+        label         = "xpFill"
+    )
+
+    // ── XP count-up ────────────────────────────────────────────────────────
+    val animXp by animateIntAsState(
+        targetValue   = userProfile.totalXp,
+        animationSpec = tween(900, easing = FastOutSlowInEasing),
+        label         = "xpCount"
+    )
+
+    // ── Streak flame pulse ─────────────────────────────────────────────────
+    val flamePulse by infiniteTransition.animateFloat(
+        initialValue  = 1f,
+        targetValue   = 1.2f,
+        animationSpec = infiniteRepeatable(tween(700, easing = FastOutSlowInEasing), RepeatMode.Reverse),
+        label         = "flamePulse"
+    )
+
+    // ── Streak wobble (fast oscillation, only applied when at-risk) ────────
+    val wobbleX by infiniteTransition.animateFloat(
+        initialValue  = -3f,
+        targetValue   = 3f,
+        animationSpec = infiniteRepeatable(tween(110, easing = LinearEasing), RepeatMode.Reverse),
+        label         = "wobble"
+    )
+
+    // ── Streak color flash (same spec, target changes) ─────────────────────
+    val streakFlash by infiniteTransition.animateColor(
+        initialValue  = tertiary,
+        targetValue   = if (streakAtRisk) error else tertiary,
+        animationSpec = infiniteRepeatable(tween(500, easing = FastOutSlowInEasing), RepeatMode.Reverse),
+        label         = "streakFlash"
+    )
+
+    val rankTitle = levelToRankTitle(userProfile.level)
+
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(GlassCard)
+            .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.90f))
+            .border(BorderStroke(1.dp, badgeGlow.copy(alpha = 0.5f)), GlassCard)
+            .drawBehind {
+                // Faint terminal grid
+                val gridPx  = 24.dp.toPx()
+                val gridClr = primary.copy(alpha = 0.04f)
+                var x = 0f
+                while (x <= size.width)  { drawLine(gridClr, Offset(x, 0f), Offset(x, size.height), 0.5f); x += gridPx }
+                var y = 0f
+                while (y <= size.height) { drawLine(gridClr, Offset(0f, y), Offset(size.width, y),   0.5f); y += gridPx }
+            }
+            .padding(16.dp)
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+
+            // ── Level badge ────────────────────────────────────────────────
+            Box(
+                modifier = Modifier
+                    .size(72.dp)
+                    .clip(RoundedCornerShape(14.dp))
+                    .background(MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.6f))
+                    .border(BorderStroke(1.5.dp, badgeGlow), RoundedCornerShape(14.dp))
+                    .drawBehind {
+                        // CRT scan line sweeps top → bottom
+                        drawLine(
+                            color       = primary.copy(alpha = 0.4f),
+                            start       = Offset(0f, size.height * scanY),
+                            end         = Offset(size.width, size.height * scanY),
+                            strokeWidth = 1.5f
+                        )
+                    },
+                contentAlignment = Alignment.Center
+            ) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text(
+                        text       = "LV",
+                        style      = MaterialTheme.typography.labelSmall,
+                        color      = primary.copy(alpha = 0.7f),
+                        fontFamily = ShareTechMonoFamily,
+                        letterSpacing = 1.5.sp
+                    )
+                    AnimatedContent(
+                        targetState = userProfile.level,
+                        transitionSpec = {
+                            (slideInVertically { it } + fadeIn()) togetherWith
+                            (slideOutVertically { -it } + fadeOut())
+                        },
+                        label = "levelNum"
+                    ) { lv ->
+                        Text(
+                            text       = "$lv",
+                            style      = MaterialTheme.typography.headlineMedium,
+                            fontWeight = FontWeight.Bold,
+                            color      = primary,
+                            fontFamily = ShareTechMonoFamily
+                        )
+                    }
+                }
+            }
+
+            Spacer(Modifier.width(14.dp))
+
+            // ── Info column ────────────────────────────────────────────────
+            Column(modifier = Modifier.weight(1f)) {
+
+                // Rank title row + streak
+                Row(
+                    modifier              = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment     = Alignment.CenterVertically
+                ) {
+                    AnimatedContent(
+                        targetState = rankTitle,
+                        transitionSpec = { fadeIn(tween(300)) togetherWith fadeOut(tween(300)) },
+                        label = "rankTitle"
+                    ) { title ->
+                        Text(
+                            text          = title,
+                            style         = MaterialTheme.typography.labelLarge,
+                            color         = primary,
+                            fontWeight    = FontWeight.Bold,
+                            fontFamily    = ShareTechMonoFamily,
+                            letterSpacing = 2.sp
+                        )
+                    }
+
+                    // Streak indicator
+                    if (userProfile.taskStreak > 0) {
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            modifier = Modifier.offset {
+                                IntOffset((if (streakAtRisk) wobbleX else 0f).roundToInt(), 0)
+                            }
+                        ) {
+                            Icon(
+                                Icons.Default.LocalFireDepartment,
+                                contentDescription = "Streak",
+                                tint     = streakFlash,
+                                modifier = Modifier
+                                    .size(18.dp)
+                                    .scale(flamePulse)
+                            )
+                            AnimatedContent(
+                                targetState    = userProfile.taskStreak,
+                                transitionSpec = {
+                                    (slideInVertically { it } + fadeIn()) togetherWith
+                                    (slideOutVertically { -it } + fadeOut())
+                                },
+                                label = "streakNum"
+                            ) { s ->
+                                Text(
+                                    "$s",
+                                    style      = MaterialTheme.typography.labelSmall,
+                                    color      = streakFlash,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
+                        }
+                    }
+                }
+
+                Spacer(Modifier.height(7.dp))
+
+                // XP bar with shimmer
+                BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
+                    val barWidthPx = with(density) { maxWidth.toPx() }
+                    val fillBrush = Brush.horizontalGradient(colors = listOf(primary, secondary))
+                    val shimmerBrush = Brush.linearGradient(
+                        colors = listOf(
+                            primary.copy(alpha = 0f),
+                            secondary.copy(alpha = 0.7f),
+                            primary.copy(alpha = 0f)
+                        ),
+                        start = Offset(shimmerPos * barWidthPx, 0f),
+                        end   = Offset((shimmerPos + 0.45f) * barWidthPx, 0f)
+                    )
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(9.dp)
+                            .clip(RoundedCornerShape(50))
+                            .background(primary.copy(alpha = 0.12f))
+                    ) {
+                        // gradient fill
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth(animXpFill.coerceIn(0f, 1f))
+                                .height(9.dp)
+                                .background(fillBrush)
+                        )
+                        // shimmer sweep over fill
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth(animXpFill.coerceIn(0f, 1f))
+                                .height(9.dp)
+                                .background(shimmerBrush)
+                        )
+                    }
+                }
+
+                Spacer(Modifier.height(4.dp))
+
+                // XP count + "to next level"
+                Row(
+                    modifier              = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text(
+                        text      = "$animXp XP",
+                        style     = MaterialTheme.typography.labelSmall,
+                        color     = primary,
+                        fontFamily = ShareTechMonoFamily
+                    )
+                    val xpToNext = calculateXpForNextLevel(userProfile.totalXp) - userProfile.totalXp
+                    Text(
+                        text  = "$xpToNext to Lv ${userProfile.level + 1}",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = onSurface.copy(alpha = 0.4f)
+                    )
+                }
+
+                // Streak-at-risk warning
+                AnimatedVisibility(
+                    visible = streakAtRisk && userProfile.taskStreak > 0,
+                    enter   = fadeIn(tween(300)) + expandVertically(tween(300)),
+                    exit    = fadeOut(tween(200)) + shrinkVertically(tween(200))
+                ) {
+                    Text(
+                        text       = "⚠  Complete a task to keep your streak!",
+                        style      = MaterialTheme.typography.labelSmall,
+                        color      = error,
+                        fontWeight = FontWeight.SemiBold,
+                        modifier   = Modifier.padding(top = 4.dp)
+                    )
+                }
+            }
+        }
     }
 }
 
-private fun getThemeDescription(theme: AppTheme): String {
-    return when (theme) {
-        AppTheme.ZONE_EXPLORER -> "A green theme inspired by the Zone's vegetation"
-        AppTheme.RADIATION     -> "An orange theme representing radiation and danger"
-        AppTheme.PRIPYAT       -> "A blue theme reflecting the cold atmosphere of Pripyat"
-    }
+private fun levelToRankTitle(level: Int): String = when {
+    level < 5  -> "RECRUIT"
+    level < 10 -> "SURVIVOR"
+    level < 20 -> "STALKER"
+    level < 35 -> "RANGER"
+    level < 50 -> "VETERAN"
+    else       -> "LEGEND"
 }
